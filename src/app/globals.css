@@ -1,26 +1,215 @@
 @import "tailwindcss";
 
+/* ============================================
+   YEEZUS DESIGN SYSTEM
+   No softness. No comfort. No border-radius.
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Cursor tracking (updated via JS) */
+  --cursor-x: 50%;
+  --cursor-y: 50%;
+
+  /* Chaos Layer */
+  --color-chaos-bg: #000000;
+  --color-chaos-fg: #ffffff;
+  --color-chaos-accent: #ff0000;
+
+  /* Divine Layer */
+  --color-divine-bg: #0a0e1a;
+  --color-divine-glow: #d4a853;
+  --color-divine-glow-soft: rgba(212, 168, 83, 0.15);
+  --color-divine-text: #c8b88a;
+
+  /* Code syntax colors */
+  --syntax-keyword: #c678dd;
+  --syntax-string: #98c379;
+  --syntax-function: #61afef;
+  --syntax-component: #e06c75;
+  --syntax-prop: #d19a66;
+  --syntax-bracket: #abb2bf;
+  --syntax-comment: #5c6370;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--color-chaos-bg);
+  --color-foreground: var(--color-chaos-fg);
+  --color-accent: var(--color-chaos-accent);
+  --font-brutalist: var(--font-brutalist);
+  --font-code: var(--font-code);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================
+   RESET — BRUTALISM REJECTS SOFTNESS
+   ============================================ */
+
+* {
+  cursor: none !important;
+  border-radius: 0 !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+*::selection {
+  background: var(--color-chaos-accent);
+  color: var(--color-chaos-fg);
+}
+
+html {
+  scroll-behavior: auto; /* Lenis handles this */
+  background: #000;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: var(--color-chaos-bg);
+  color: var(--color-chaos-fg);
+  font-family: var(--font-brutalist), "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ============================================
+   FLASH KEYFRAMES — THE ON SIGHT EXPERIENCE
+   ============================================ */
+
+@keyframes chaos-flash {
+  0%,
+  100% {
+    background-color: #000000;
+  }
+  5% {
+    background-color: #ffffff;
+  }
+  10% {
+    background-color: #000000;
+  }
+  48% {
+    background-color: #000000;
+  }
+  50% {
+    background-color: #ffffff;
+  }
+  52% {
+    background-color: #000000;
+  }
+  78% {
+    background-color: #000000;
+  }
+  80% {
+    background-color: #1a1a1a;
+  }
+  82% {
+    background-color: #000000;
+  }
+}
+
+@keyframes text-glitch {
+  0%,
+  100% {
+    transform: translate(0, 0) skewX(0deg);
+  }
+  20% {
+    transform: translate(-2px, 1px) skewX(-0.5deg);
+  }
+  40% {
+    transform: translate(2px, -1px) skewX(0.5deg);
+  }
+  60% {
+    transform: translate(-1px, 2px) skewX(-0.3deg);
+  }
+  80% {
+    transform: translate(1px, -2px) skewX(0.3deg);
+  }
+}
+
+@keyframes divine-glow {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes grain {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-5%, -10%);
+  }
+  20% {
+    transform: translate(-15%, 5%);
+  }
+  30% {
+    transform: translate(7%, -25%);
+  }
+  40% {
+    transform: translate(-5%, 25%);
+  }
+  50% {
+    transform: translate(-15%, 10%);
+  }
+  60% {
+    transform: translate(15%, 0%);
+  }
+  70% {
+    transform: translate(0%, 15%);
+  }
+  80% {
+    transform: translate(3%, 35%);
+  }
+  90% {
+    transform: translate(-10%, 10%);
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.chaos-flash {
+  animation: chaos-flash 3s step-end infinite;
+}
+
+.text-glitch {
+  animation: text-glitch 0.3s step-end infinite;
+}
+
+.divine-glow-pulse {
+  animation: divine-glow 4s ease-in-out infinite;
+}
+
+/* Film grain overlay */
+.grain-overlay::after {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  animation: grain 8s steps(10) infinite;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+/* ============================================
+   SCROLLBAR — INVISIBLE
+   ============================================ */
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
