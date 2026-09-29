@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     siteName: "Siddhant Bansod",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "https://siddhantbansod.me/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Siddhant Bansod - Repel Mediocrity",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Siddhant Bansod | Repel Mediocrity",
     description: "Systems architecture, autonomous hardware, and kinetic engineering.",
-    images: ["/og-image.jpg"],
+    images: ["https://siddhantbansod.me/og-image.jpg"],
   },
 };
 
@@ -36,8 +36,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* Your existing body/fonts go here */}
-      <body>{children}</body>
+      <body className="antialiased text-white bg-black selection:bg-[#D41111] selection:text-white">
+        {children}
+      </body>
     </html>
   );
 }
