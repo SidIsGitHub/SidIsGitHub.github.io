@@ -24,7 +24,7 @@ export default function CursorMask({ children, scrollYProgress }: CursorMaskProp
 
   const speed = useTransform(
     [smoothVelocityX, smoothVelocityY],
-    ([vx, vy]) => Math.min(Math.sqrt(vx * vx + vy * vy) * 0.08, 150)
+    ([vx, vy]: number[]) => Math.min(Math.sqrt(Math.abs(vx) * vx + Math.abs(vy) * vy) * 0.08, 150)
   );
 
   const maskTearRef = useRef<SVGFEDisplacementMapElement>(null);
