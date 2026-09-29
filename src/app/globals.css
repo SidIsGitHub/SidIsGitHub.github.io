@@ -59,6 +59,7 @@
 
 html {
   scroll-behavior: auto; /* Lenis handles this */
+  overflow: hidden; /* Lenis manages overflow */
   background: #000;
 }
 
@@ -67,6 +68,7 @@ body {
   padding: 0;
   background: var(--color-chaos-bg);
   color: var(--color-chaos-fg);
+  overflow: hidden;
   font-family: var(--font-brutalist), "Helvetica Neue", Arial, sans-serif;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useSpring, useMotionValue } from "motion/react";
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef } from "react";
 
 interface GlitchTextProps {
   text: string;
@@ -65,7 +65,7 @@ export default function GlitchText({
     };
   }, [config, x, y, skewX, opacity]);
 
-  const MotionTag = useMemo(() => motion.create(Tag), [Tag]);
+  const MotionTag = motion.create(Tag);
 
   return (
     <MotionTag

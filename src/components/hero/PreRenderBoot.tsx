@@ -22,9 +22,6 @@ export function PreRenderBoot({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     let currentIndex = 0;
     
-    let crashTimeoutId: NodeJS.Timeout;
-    let finishTimeoutId: NodeJS.Timeout;
-    
     // High-speed spooling (40ms per line)
     const spoolInterval = setInterval(() => {
       if (currentIndex < BOOT_LOGS.length) {
@@ -35,22 +32,18 @@ export function PreRenderBoot({ onComplete }: { onComplete: () => void }) {
         clearInterval(spoolInterval);
         
         // Trigger the fake crash
-        crashTimeoutId = setTimeout(() => {
+        setTimeout(() => {
           setCrashed(true);
           
           // Hold the crash screen for 150ms, then snap to the main site
-          finishTimeoutId = setTimeout(() => {
+          setTimeout(() => {
             onComplete();
           }, 150);
         }, 100);
       }
     }, 40);
 
-    return () => {
-      clearInterval(spoolInterval);
-      if (crashTimeoutId) clearTimeout(crashTimeoutId);
-      if (finishTimeoutId) clearTimeout(finishTimeoutId);
-    };
+    return () => clearInterval(spoolInterval);
   }, [onComplete]);
 
   return (

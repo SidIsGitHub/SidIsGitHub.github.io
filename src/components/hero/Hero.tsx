@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useScroll, useTransform, useMotionValueEvent, useVelocity, useSpring, useMotionTemplate, motion, useMotionValue, MotionValue } from "framer-motion";
 import ChaosLayer from "./ChaosLayer";
 import CodeUnderworld from "./CodeUnderworld";
@@ -79,7 +79,18 @@ export default function Hero({ rawCode }: HeroProps) {
 
   // The Rotary Physics & State Manager
   const rotation = useMotionValue(0);
+  const smoothRotation = useSpring(rotation, { damping: 40, stiffness: 300 });
   const rotationVelocityRaw = useVelocity(rotation);
+
+  // Z-Axis Camera Drill (0 to +90 degrees)
+  const textZScale = useTransform(smoothRotation, [0, 90], [1, 20]);
+  const textBlur = useTransform(smoothRotation, [0, 50, 90], ["blur(0px)", "blur(4px)", "blur(25px)"]);
+  const elementOpacity = useTransform(smoothRotation, [0, 70, 90], [1, 0.8, 0]);
+
+  // Premium Environmental Shift (Triggers at 85-90 degrees)
+  const chaosOpacity = useTransform(smoothRotation, [85, 90], [1, 0]);
+  const projectOpacity = useTransform(smoothRotation, [85, 90], [0, 1]);
+  const cdFilter = useTransform(smoothRotation, [85, 90], ["grayscale(0%) invert(0%) opacity(100%)", "grayscale(100%) invert(100%) opacity(40%)"]);
 
   // We need the absolute magnitude of the combined velocity (scrolling or CD scratching)
   const velocityMagnitude = useTransform(
@@ -120,25 +131,28 @@ export default function Hero({ rawCode }: HeroProps) {
   const activeProject = PROJECT_REGISTRY[activeProjectKey];
 
   const renderTypography = (isUnderworld = false) => {
-    const nameClass = isUnderworld
-      ? "bg-[#D41111] text-[#EBEBEB] px-8 py-2 border-2 border-black"
-      : "text-[#050505] mix-blend-multiply opacity-95";
-
-    const subtextClass = isUnderworld
-      ? "bg-[#D41111] text-[#EBEBEB] px-8 py-2 border-2 border-black"
-      : "text-[#8a0303] mix-blend-multiply opacity-90";
+    const nameClass = isUnderworld 
+      ? "bg-[#D41111] text-[#EBEBEB] px-8 py-2 border-2 border-black" 
+      : "text-[#050505] mix-blend-multiply opacity-95"; 
+      
+    const subtextClass = isUnderworld 
+      ? "bg-[#D41111] text-[#EBEBEB] px-8 py-2 border-2 border-black" 
+      : "text-[#8a0303] mix-blend-multiply opacity-90"; 
 
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-start pt-[6vh] z-0 pointer-events-none font-sans">
-
+      <motion.div 
+        className="absolute inset-0 flex flex-col items-center justify-start pt-[6vh] z-0 pointer-events-none font-sans"
+        style={{ scale: textZScale, filter: textBlur, opacity: elementOpacity }}
+      >
+        
         {/* 
           Convert to motion.h1 and attach the velocity physics. 
           Note: We keep the baseline layout transforms (-rotate-2, -skew-x-6) 
           but drive the dynamic shearing and glitching via Framer Motion's inline style.
         */}
-        <motion.h1
+        <motion.h1 
           className="text-[17vw] font-black leading-[0.75] uppercase text-center flex flex-col items-center origin-bottom"
-          style={{
+          style={{ 
             letterSpacing: "-0.08em",
             rotate: -2,       // Base static rotation
             skewX: shear,     // Velocity-driven horizontal tearing
@@ -150,10 +164,10 @@ export default function Hero({ rawCode }: HeroProps) {
             SIDDHANT
           </span>
         </motion.h1>
-
-        <motion.h2
+        
+        <motion.h2 
           className="text-[3.5vw] font-black leading-none tracking-widest uppercase mt-4 text-center origin-top"
-          style={{
+          style={{ 
             skewX: shear,
             x: inverseJitter, // Jitters in the opposite direction
             textShadow: isUnderworld ? "none" : rgbShadow
@@ -163,15 +177,13 @@ export default function Hero({ rawCode }: HeroProps) {
             REPEL MEDIOCRITY
           </span>
         </motion.h2>
-
-      </div>
+        
+      </motion.div>
     );
   };
 
-  const handleBoot = useCallback(() => setHasBooted(true), []);
-
   if (!hasBooted) {
-    return <PreRenderBoot onComplete={handleBoot} />;
+    return <PreRenderBoot onComplete={() => setHasBooted(true)} />;
   }
 
   return (
@@ -182,18 +194,43 @@ export default function Hero({ rawCode }: HeroProps) {
     >
       {/* Sticky container — keeps the visual viewport locked while scrolling drives physics */}
       <div className="sticky top-0 w-full h-screen overflow-hidden">
-
+        
         {/* The Subliminal Engine - Passes the absolute magnitude of the scroll velocity */}
         <SubliminalFlashes velocity={velocityMagnitude} />
 
         {/* Layer 1: CODE UNDERWORLD (STATIC BACKGROUND) */}
-        <div className="absolute inset-0 z-10 pointer-events-none">
+        <motion.div className="absolute inset-0 z-10 pointer-events-none" style={{ opacity: chaosOpacity }}>
           <CodeUnderworld activeZone={activeZone} rawCode={activeProject.code} />
           {renderTypography(true)}
-        </div>
+        </motion.div>
+
+        {/* Layer 1.5: THE PREMIUM PROJECT SHOWCASE */}
+        <motion.div 
+          className="absolute inset-0 z-20 flex flex-col items-center justify-start pt-[15vh] pointer-events-none bg-[#F5F5F7]"
+          style={{ opacity: projectOpacity }}
+        >
+          <div className="w-[85vw] max-w-5xl text-[#111111] flex flex-col md:flex-row gap-12">
+            <div className="flex-1">
+              <h3 className="font-mono text-xs tracking-widest opacity-50 mb-4">SYSTEM_ARCHITECTURE</h3>
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-none mb-6">
+                {activeProject.id}
+              </h2>
+              <p className="text-lg md:text-xl opacity-80 max-w-lg mb-8 leading-relaxed">
+                Autonomous hardware architecture engineered for zero-latency data mutation and real-time environment synchronization.
+              </p>
+              <div className="flex flex-wrap gap-4 font-mono text-xs font-bold uppercase">
+                <span className="bg-[#111] text-[#F5F5F7] px-4 py-2 rounded-full">{activeProject.stack.split(" // ")[0] || activeProject.stack}</span>
+                <span className="border border-[#111]/20 px-4 py-2 rounded-full">{activeProject.status}</span>
+              </div>
+            </div>
+            <div className="flex-1 bg-[#111]/5 rounded-3xl min-h-[40vh] border border-[#111]/10 flex items-center justify-center">
+               <span className="font-mono text-xs opacity-30">ASSET_VIEWPORT</span>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Layer 2: TEAR MASK WRAPPING THE ENTIRE UI */}
-        <div className="absolute inset-0 z-20">
+        <motion.div className="absolute inset-0 z-20" style={{ opacity: chaosOpacity }}>
           <CursorMask scrollYProgress={scrollYProgress}>
             {/* CHAOS LAYER (Black Background) */}
             <div className="absolute inset-0 pointer-events-auto" onMouseEnter={() => setActiveZone("surface")}>
@@ -203,12 +240,12 @@ export default function Hero({ rawCode }: HeroProps) {
             {/* 3. The Typography (z-0) - Sits flat on the background */}
             {renderTypography(false)}
           </CursorMask>
-        </div>
+        </motion.div>
 
         {/* Layer 3: PERMANENTLY INTACT HARDWARE (Sits ON TOP of the mask tear) */}
         <div className="absolute inset-0 z-30 pointer-events-none">
           {/* THE PHYSICAL SCRUBBER (Navigation Dial) */}
-          <motion.div
+          <motion.div 
             className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[55%] w-[75vw] aspect-square z-40 pointer-events-auto"
             style={{ rotate: rotation }}
             // The tactile physics
@@ -216,38 +253,39 @@ export default function Hero({ rawCode }: HeroProps) {
             onPanEnd={() => setIsDragging(false)}
             onPan={(_, info) => {
               // Mapping X/Y drag velocity directly to rotation (heavy, 1:1 mechanical feel)
-              const delta = info.delta.x - info.delta.y;
+              const delta = info.delta.x - info.delta.y; 
               rotation.set(rotation.get() + delta * 0.5); // 0.5 adds physical resistance
             }}
           >
             {/* The image layers must have pointer-events-auto and proper cursor styling */}
             <div className={`relative w-full h-full rounded-full overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} pointer-events-auto`} onMouseEnter={() => setActiveZone("cd")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/yeezus-cd.webp"
+              <motion.img 
+                src="/yeezus-cd.webp" 
                 alt="Yeezus CD"
-                className="absolute inset-0 w-full h-full object-cover rounded-full pointer-events-none"
+                className="absolute inset-0 w-full h-full object-cover rounded-full pointer-events-none" 
+                style={{ filter: cdFilter }}
               />
             </div>
           </motion.div>
 
           {/* INDUSTRIAL HUD (BRUTALISM) */}
-          <div className="absolute inset-0 z-40 pointer-events-none overflow-hidden">
-
+          <motion.div className="absolute inset-0 z-40 pointer-events-none overflow-hidden" style={{ opacity: elementOpacity }}>
+            
             {/* PRINTER REGISTRATION LAYER */}
             <div className="absolute inset-0 z-0 pointer-events-none p-6 flex flex-col justify-between opacity-70 mix-blend-multiply">
               {/* Top Row: Crops & Crosshair */}
               <div className="flex justify-between items-start">
-                <svg width="40" height="40" viewBox="0 0 40 40" className="text-[#151515]"><path d="M0,0 L40,0 L40,2 L2,2 L2,40 L0,40 Z" fill="currentColor" /></svg>
-                <svg width="20" height="20" viewBox="0 0 20 20" className="text-[#151515]"><path d="M9,0 L11,0 L11,9 L20,9 L20,11 L11,11 L11,20 L9,20 L9,11 L0,11 L0,9 L9,9 Z" fill="currentColor" /></svg>
-                <svg width="40" height="40" viewBox="0 0 40 40" className="text-[#151515]"><path d="M40,0 L0,0 L0,2 L38,2 L38,40 L40,40 Z" fill="currentColor" /></svg>
+                <svg width="40" height="40" viewBox="0 0 40 40" className="text-[#151515]"><path d="M0,0 L40,0 L40,2 L2,2 L2,40 L0,40 Z" fill="currentColor"/></svg>
+                <svg width="20" height="20" viewBox="0 0 20 20" className="text-[#151515]"><path d="M9,0 L11,0 L11,9 L20,9 L20,11 L11,11 L11,20 L9,20 L9,11 L0,11 L0,9 L9,9 Z" fill="currentColor"/></svg>
+                <svg width="40" height="40" viewBox="0 0 40 40" className="text-[#151515]"><path d="M40,0 L0,0 L0,2 L38,2 L38,40 L40,40 Z" fill="currentColor"/></svg>
               </div>
-
+              
               {/* Bottom Row: Crops, Crosshair, & CMYK Bar */}
               <div className="flex justify-between items-end">
-                <svg width="40" height="40" viewBox="0 0 40 40" className="text-[#151515]"><path d="M0,40 L40,40 L40,38 L2,38 L2,0 L0,0 Z" fill="currentColor" /></svg>
-                <svg width="20" height="20" viewBox="0 0 20 20" className="text-[#151515]"><path d="M9,0 L11,0 L11,9 L20,9 L20,11 L11,11 L11,20 L9,20 L9,11 L0,11 L0,9 L9,9 Z" fill="currentColor" /></svg>
-
+                <svg width="40" height="40" viewBox="0 0 40 40" className="text-[#151515]"><path d="M0,40 L40,40 L40,38 L2,38 L2,0 L0,0 Z" fill="currentColor"/></svg>
+                <svg width="20" height="20" viewBox="0 0 20 20" className="text-[#151515]"><path d="M9,0 L11,0 L11,9 L20,9 L20,11 L11,11 L11,20 L9,20 L9,11 L0,11 L0,9 L9,9 Z" fill="currentColor"/></svg>
+                
                 <div className="flex items-end gap-2">
                   {/* CMYK Test Strip */}
                   <div className="flex gap-[2px]">
@@ -257,24 +295,24 @@ export default function Hero({ rawCode }: HeroProps) {
                     <div className="w-5 h-5 bg-[#050505]" />
                   </div>
                   {/* Bottom Right Crop */}
-                  <svg width="40" height="40" viewBox="0 0 40 40" className="text-[#151515]"><path d="M40,40 L0,40 L0,38 L38,38 L38,0 L40,0 Z" fill="currentColor" /></svg>
+                  <svg width="40" height="40" viewBox="0 0 40 40" className="text-[#151515]"><path d="M40,40 L0,40 L0,38 L38,38 L38,0 L40,0 Z" fill="currentColor"/></svg>
                 </div>
               </div>
             </div>
             {/* Raw Geometric Barcode / Scale */}
             <div className="absolute bottom-8 left-8 flex items-end gap-1 opacity-90 mix-blend-multiply">
               {Array.from({ length: 15 }).map((_, i) => (
-                <div
-                  key={i}
+                <div 
+                  key={i} 
                   className="bg-[#0a0a0a]"
-                  style={{
-                    width: i % 3 === 0 ? "4px" : "2px",
-                    height: i % 4 === 0 ? "32px" : "16px"
-                  }}
+                  style={{ 
+                    width: i % 3 === 0 ? "4px" : "2px", 
+                    height: i % 4 === 0 ? "32px" : "16px" 
+                  }} 
                 />
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

@@ -3,7 +3,7 @@ import { motion, MotionValue } from "framer-motion";
 interface YeezusDiscProps {
   onMouseEnter?: () => void;
   rotation?: MotionValue<number>;
-  activeProject: { id: string; stack: string; status: string; code: string };
+  activeProject: { id: string; class: string; stack: string; status: string; code: string };
 }
 
 export default function CDCenterpiece({ onMouseEnter, rotation, activeProject }: YeezusDiscProps) {
@@ -23,7 +23,7 @@ export default function CDCenterpiece({ onMouseEnter, rotation, activeProject }:
       >
         <div className="font-mono text-[0.7rem] text-[#00B4D8] opacity-80">
           <p className="font-bold border-b border-[#00B4D8]/30 pb-1 mb-1">PROJECT: {activeProject.id}</p>
-
+          <p>CLASS: {activeProject.class}</p>
           <p className="text-[#C77DFF]">STACK: {activeProject.stack}</p>
         </div>
         

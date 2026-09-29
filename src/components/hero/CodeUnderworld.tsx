@@ -9,22 +9,23 @@ export default function CodeUnderworld({ activeZone, rawCode }: { activeZone?: s
   // 3. Multiply it massively to ensure a full edge-to-edge matrix
   const massiveCode = continuousCode.repeat(100);
 
-  // Single-pass tokenizer to avoid double-processing and corrupting HTML
+  // Strict regex pipeline: Escape HTML first, then colorize.
   const formatCode = (codeStr: string) => {
-    // 1. Escape HTML
-    const escaped = codeStr.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    let html = codeStr.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
-    // 2. Single-pass tokenizer
-    const tokenizer = /(["'`][\s\S]*?["'`])|(\/\/.*)|(\b(?:export|default|function|return|const|let|var|import|from|useMotionValue|useVelocity)\b)|(\b[A-Z][a-zA-Z0-9_]*\b)|(\b\d+\b)/g;
-    
-    return escaped.replace(tokenizer, (match, str, comment, keyword, reactComp, num) => {
-      if (str) return `<span style="color:#00B4D8;">${str}</span>`;
-      if (comment) return `<span style="color:#6B7280; font-style:italic;">${comment}</span>`;
-      if (keyword) return `<span style="color:#C77DFF; font-weight:bold;">${keyword}</span>`;
-      if (reactComp) return `<span style="color:#FF2A00; font-weight:bold;">${reactComp}</span>`;
-      if (num) return `<span style="color:#FFB703;">${num}</span>`;
-      return match;
-    });
+    html = html
+      // Strings (Seraphic Cyan)
+      .replace(/(["'`].*?["'`])/g, '<span style="color:#00B4D8;">$1</span>')
+      // Keywords (Ethereal Violet)
+      .replace(/\b(export|default|function|return|const|let|var|import|from|useMotionValue|useVelocity)\b/g, '<span style="color:#C77DFF; font-weight:bold;">$1</span>')
+      // React Components (Warning Red)
+      .replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span style="color:#FF2A00; font-weight:bold;">$1</span>')
+      // Numbers (Halo Gold)
+      .replace(/\b(\d+)\b/g, '<span style="color:#FFB703;">$1</span>')
+      // Comments (Dim Gray)
+      .replace(/(\/\/.*)/g, '<span style="color:#6B7280; font-style:italic;">$1</span>');
+      
+    return html;
   };
 
   return (

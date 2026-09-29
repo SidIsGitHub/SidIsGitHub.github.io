@@ -24,7 +24,7 @@ export default function CursorMask({ children, scrollYProgress }: CursorMaskProp
 
   const speed = useTransform(
     [smoothVelocityX, smoothVelocityY],
-    ([vx, vy]: number[]) => Math.min(Math.sqrt(Math.abs(vx) * vx + Math.abs(vy) * vy) * 0.08, 150)
+    ([vx, vy]) => Math.min(Math.sqrt((vx as number) * (vx as number) + (vy as number) * (vy as number)) * 0.08, 150)
   );
 
   const maskTearRef = useRef<SVGFEDisplacementMapElement>(null);
@@ -125,12 +125,12 @@ export default function CursorMask({ children, scrollYProgress }: CursorMaskProp
          {children}
       </div>
 
+      <SurveillanceTerminal mouseX={mouseX} mouseY={mouseY} scrollYProgress={scrollYProgress}/>
     </>
   );
 
   return (
     <>
-      <SurveillanceTerminal mouseX={mouseX} mouseY={mouseY} scrollYProgress={scrollYProgress}/>
       <svg className="fixed inset-0 w-full h-full pointer-events-none z-0">
         <defs>
           <filter id="jagged-edge" x="-50%" y="-50%" width="200%" height="200%">
