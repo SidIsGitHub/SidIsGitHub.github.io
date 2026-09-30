@@ -77,37 +77,51 @@ export default function Hero({ rawCode }: HeroProps) {
   }, [mouseX, mouseY]);
 
 
-  // The Rotary Physics & State Manager
+  // ADD TO TOP OF HERO COMPONENT
   const rotation = useMotionValue(0);
   const smoothRotation = useSpring(rotation, { damping: 40, stiffness: 300 });
-  const rotationVelocityRaw = useVelocity(rotation);
+  const spinVelocity = useVelocity(rotation);
+  const newSmoothVelocity = useSpring(spinVelocity, { damping: 20, stiffness: 400 });
 
-  // Z-Axis Camera Drill (0 to +90 degrees)
-  const textZScale = useTransform(smoothRotation, [0, 90], [1, 20]);
-  const textBlur = useTransform(smoothRotation, [0, 50, 90], ["blur(0px)", "blur(4px)", "blur(25px)"]);
-  const elementOpacity = useTransform(smoothRotation, [0, 70, 90], [1, 0.8, 0]);
+  // 1. Z-Axis Camera (Negative rotation does nothing, Clockwise drills)
+  const textZScale = useTransform(smoothRotation, [-360, 0, 90], [1, 1, 20]);
+  const textBlur = useTransform(smoothRotation, [-360, 0, 50, 90], ["blur(0px)", "blur(0px)", "blur(4px)", "blur(25px)"]);
+  const elementOpacity = useTransform(smoothRotation, [-360, 0, 70, 90], [1, 1, 0.8, 0]); 
 
-  // Premium Environmental Shift (Triggers at 85-90 degrees)
-  const chaosOpacity = useTransform(smoothRotation, [85, 90], [1, 0]);
-  const projectOpacity = useTransform(smoothRotation, [85, 90], [0, 1]);
-  const cdFilter = useTransform(smoothRotation, [85, 90], ["grayscale(0%) invert(0%) opacity(100%)", "grayscale(100%) invert(100%) opacity(40%)"]);
+  // Kinetic Aberration Engine
+  const rgbShadow = useTransform(
+    newSmoothVelocity,
+    [-800, 0, 800],
+    [
+      "-8px 0px 0px rgba(212,17,17,0.8), 8px 0px 0px rgba(0,255,255,0.8)",
+      "0px 0px 0px rgba(212,17,17,0), 0px 0px 0px rgba(0,255,255,0)",
+      "8px 0px 0px rgba(212,17,17,0.8), -8px 0px 0px rgba(0,255,255,0.8)"
+    ]
+  );
+  const shear = useTransform(newSmoothVelocity, [-800, 0, 800], [-8, 0, 8]);
+  const jitter = useTransform(newSmoothVelocity, [-800, 0, 800], [-15, 0, 15]);
+  const inverseJitter = useTransform(jitter, (val) => val * -0.5);
 
-  // We need the absolute magnitude of the combined velocity (scrolling or CD scratching)
+  // We need the absolute magnitude of the combined velocity (scrolling or CD scratching) for the subliminal flashes
   const velocityMagnitude = useTransform(
-    [smoothVelocity, rotationVelocityRaw],
+    [smoothRotation, spinVelocity],
     ([sv, rv]) => Math.max(Math.abs(sv as number), Math.abs((rv as number) * 15))
   );
 
-  // 1. Chromatic Aberration: Map velocity (0 - 1500) to an RGB shadow offset (0px to 40px)
-  const rgbOffset = useTransform(velocityMagnitude, [0, 1500], [0, 40]);
-  const rgbShadow = useMotionTemplate`${rgbOffset}px 0px 0px rgba(212,17,17,0.9), calc(${rgbOffset}px * -1) 0px 0px rgba(0,255,255,0.9)`;
+  // 6. Tesseract Kinetic Spike (1x normal speed, 4x under heavy RPM)
+  const tesseractSpike = useTransform(smoothVelocity, [-800, 0, 800], [4, 1, 4]);
 
-  // 2. Horizontal Tearing: Map velocity to a violent CSS skew
-  const shear = useTransform(velocityMagnitude, [0, 1500], [0, -35]);
+  // 2. Premium Clean Room Snap (Triggers ONLY at +90)
+  const brutalistOpacity = useTransform(smoothRotation, [-360, 0, 89.9, 90], [1, 1, 1, 0]);
+  const cleanRoomOpacity = useTransform(smoothRotation, [-360, 0, 89.9, 90], [0, 0, 0, 1]);
 
-  // 3. Glitch Jitter: Map velocity to random-feeling X-axis displacement
-  const jitter = useTransform(velocityMagnitude, [0, 500, 1000, 1500], [0, -15, 20, -30]);
-  const inverseJitter = useTransform(jitter, (val) => val * -0.5);
+  // 3. Cinematic Flashbang (Peaks at 90, instantly dies by 90.1)
+  const transitionFlash = useTransform(smoothRotation, [89, 90, 90.1, 91], [0, 1, 0, 0]);
+
+  // The Mechanical Snap (Visual Rotation)
+  // While the user drags to 90, the image rotates 1:1. 
+  // At exactly 90, the graphic violently snaps backwards to 75 degrees and locks.
+  const visualCdRotation = useTransform(smoothRotation, [-360, 0, 89.9, 90, 91], [-360, 0, 89.9, 75, 75]);
 
   const [activeProjectKey, setActiveProjectKey] = useState<keyof typeof PROJECT_REGISTRY>("fluxx");
   const [isDragging, setIsDragging] = useState(false);
@@ -130,66 +144,16 @@ export default function Hero({ rawCode }: HeroProps) {
 
   const activeProject = PROJECT_REGISTRY[activeProjectKey];
 
-  const renderTypography = (isUnderworld = false) => {
-    const nameClass = isUnderworld 
-      ? "bg-[#D41111] text-[#EBEBEB] px-8 py-2 border-2 border-black" 
-      : "text-[#050505] mix-blend-multiply opacity-95"; 
-      
-    const subtextClass = isUnderworld 
-      ? "bg-[#D41111] text-[#EBEBEB] px-8 py-2 border-2 border-black" 
-      : "text-[#8a0303] mix-blend-multiply opacity-90"; 
 
-    return (
-      <motion.div 
-        className="absolute inset-0 flex flex-col items-center justify-start pt-[6vh] z-0 pointer-events-none font-sans"
-        style={{ scale: textZScale, filter: textBlur, opacity: elementOpacity }}
-      >
-        
-        {/* 
-          Convert to motion.h1 and attach the velocity physics. 
-          Note: We keep the baseline layout transforms (-rotate-2, -skew-x-6) 
-          but drive the dynamic shearing and glitching via Framer Motion's inline style.
-        */}
-        <motion.h1 
-          className="text-[17vw] font-black leading-[0.75] uppercase text-center flex flex-col items-center origin-bottom"
-          style={{ 
-            letterSpacing: "-0.08em",
-            rotate: -2,       // Base static rotation
-            skewX: shear,     // Velocity-driven horizontal tearing
-            x: jitter,        // Velocity-driven jitter
-            textShadow: isUnderworld ? "none" : rgbShadow // Velocity-driven RGB split (only on surface)
-          }}
-        >
-          <span className={nameClass}>
-            SIDDHANT
-          </span>
-        </motion.h1>
-        
-        <motion.h2 
-          className="text-[3.5vw] font-black leading-none tracking-widest uppercase mt-4 text-center origin-top"
-          style={{ 
-            skewX: shear,
-            x: inverseJitter, // Jitters in the opposite direction
-            textShadow: isUnderworld ? "none" : rgbShadow
-          }}
-        >
-          <span className={subtextClass}>
-            REPEL MEDIOCRITY
-          </span>
-        </motion.h2>
-        
-      </motion.div>
-    );
-  };
 
   if (!hasBooted) {
     return <PreRenderBoot onComplete={() => setHasBooted(true)} />;
   }
 
   return (
-    <section
+    <motion.main
       id="hero"
-      className="relative w-full overflow-hidden"
+      className="relative w-full overflow-hidden bg-black"
       style={{ height: "300vh" }} // Extra height for scroll-driven disc rotation
     >
       {/* Sticky container — keeps the visual viewport locked while scrolling drives physics */}
@@ -199,28 +163,62 @@ export default function Hero({ rawCode }: HeroProps) {
         <SubliminalFlashes velocity={velocityMagnitude} />
 
         {/* Layer 1: CODE UNDERWORLD (STATIC BACKGROUND) */}
-        <motion.div className="absolute inset-0 z-10 pointer-events-none" style={{ opacity: chaosOpacity }}>
-          <CodeUnderworld activeZone={activeZone} rawCode={activeProject.code} />
-          {renderTypography(true)}
+        <motion.div className="absolute inset-0 z-10 pointer-events-none" style={{ opacity: brutalistOpacity }}>
+          <CodeUnderworld speedMultiplier={tesseractSpike} activeZone={activeZone} rawCode={activeProject.code} />
         </motion.div>
 
-        {/* Layer 1.5: THE PREMIUM PROJECT SHOWCASE */}
+
+        {/* Layer 2: TEAR MASK WRAPPING THE ENTIRE UI */}
+        <motion.div className="absolute inset-0 z-20" style={{ opacity: brutalistOpacity }}>
+          <CursorMask scrollYProgress={scrollYProgress}>
+            {/* CHAOS LAYER (Black Background) */}
+            <div className="absolute inset-0 pointer-events-auto" onMouseEnter={() => setActiveZone("surface")}>
+              <ChaosLayer />
+            </div>
+
+            {/* 3. The Typography (z-0) - Sits flat on the background */}
+            {/* ONLY UPDATE THIS SPECIFIC WRAPPER AND ITS HEADINGS */}
+            <motion.div 
+              className="absolute inset-0 flex flex-col items-center justify-start pt-[12vh] z-20 origin-center pointer-events-none"
+              style={{ 
+                scale: textZScale,
+                filter: textBlur,
+                opacity: elementOpacity,
+                skewX: shear, 
+                x: jitter     
+              }}
+            >
+              <motion.h1 
+                className="text-[17vw] font-black leading-[0.75] uppercase text-center text-[#050505] mix-blend-multiply"
+                style={{ textShadow: rgbShadow }} 
+              >
+                SIDDHANT
+              </motion.h1>
+              <motion.h2 
+                className="text-[3.5vw] font-black leading-none tracking-widest uppercase mt-4 text-[#8a0303] mix-blend-multiply opacity-90"
+                style={{ textShadow: rgbShadow, x: inverseJitter }}
+              >
+                REPEL MEDIOCRITY
+              </motion.h2>
+            </motion.div>
+          </CursorMask>
+        </motion.div>
+
+        {/* INJECT THIS NEW LAYER TO FADE IN AT 90 DEGREES */}
         <motion.div 
-          className="absolute inset-0 z-20 flex flex-col items-center justify-start pt-[15vh] pointer-events-none bg-[#F5F5F7]"
-          style={{ opacity: projectOpacity }}
+          className="absolute inset-0 z-20 flex flex-col items-center justify-start pt-[5vh] pointer-events-none bg-[#F5F5F7]"
+          style={{ opacity: cleanRoomOpacity }}
         >
           <div className="w-[85vw] max-w-5xl text-[#111111] flex flex-col md:flex-row gap-12">
             <div className="flex-1">
               <h3 className="font-mono text-xs tracking-widest opacity-50 mb-4">SYSTEM_ARCHITECTURE</h3>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-none mb-6">
-                {activeProject.id}
-              </h2>
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-none mb-6">NEXUSDESK</h2>
               <p className="text-lg md:text-xl opacity-80 max-w-lg mb-8 leading-relaxed">
-                Autonomous hardware architecture engineered for zero-latency data mutation and real-time environment synchronization.
+                High-performance operational dashboard engineered for zero-latency data mutation and fluid user experience.
               </p>
               <div className="flex flex-wrap gap-4 font-mono text-xs font-bold uppercase">
-                <span className="bg-[#111] text-[#F5F5F7] px-4 py-2 rounded-full">{activeProject.stack.split(" // ")[0] || activeProject.stack}</span>
-                <span className="border border-[#111]/20 px-4 py-2 rounded-full">{activeProject.status}</span>
+                <span className="bg-[#111] text-[#F5F5F7] px-4 py-2 rounded-full">React / TypeScript / Node</span>
+                <span className="border border-[#111]/20 px-4 py-2 rounded-full">DEPLOYED</span>
               </div>
             </div>
             <div className="flex-1 bg-[#111]/5 rounded-3xl min-h-[40vh] border border-[#111]/10 flex items-center justify-center">
@@ -229,45 +227,63 @@ export default function Hero({ rawCode }: HeroProps) {
           </div>
         </motion.div>
 
-        {/* Layer 2: TEAR MASK WRAPPING THE ENTIRE UI */}
-        <motion.div className="absolute inset-0 z-20" style={{ opacity: chaosOpacity }}>
-          <CursorMask scrollYProgress={scrollYProgress}>
-            {/* CHAOS LAYER (Black Background) */}
-            <div className="absolute inset-0 pointer-events-auto" onMouseEnter={() => setActiveZone("surface")}>
-              <ChaosLayer />
-            </div>
-
-            {/* 3. The Typography (z-0) - Sits flat on the background */}
-            {renderTypography(false)}
-          </CursorMask>
-        </motion.div>
-
-        {/* Layer 3: PERMANENTLY INTACT HARDWARE (Sits ON TOP of the mask tear) */}
+        {/* LAYER 3: THE HEAVY CD SCRUBBER */}
         <div className="absolute inset-0 z-30 pointer-events-none">
-          {/* THE PHYSICAL SCRUBBER (Navigation Dial) */}
-          <motion.div 
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[55%] w-[75vw] aspect-square z-40 pointer-events-auto"
-            style={{ rotate: rotation }}
-            // The tactile physics
+          {/* ENTRANCE ANIMATOR */}
+          <motion.div
+            initial={{ y: "100vh" }}
+            animate={{ y: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="absolute inset-0 pointer-events-none"
+          >
+            <motion.div 
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[55%] w-[70vw] aspect-square z-40 pointer-events-auto" // UPSIZED TO 70vw
+              style={{ cursor: isDragging ? "grabbing" : "grab" }}
             onPanStart={() => setIsDragging(true)}
             onPanEnd={() => setIsDragging(false)}
             onPan={(_, info) => {
-              // Mapping X/Y drag velocity directly to rotation (heavy, 1:1 mechanical feel)
-              const delta = info.delta.x - info.delta.y; 
-              rotation.set(rotation.get() + delta * 0.5); // 0.5 adds physical resistance
+              let current = rotation.get();
+              let drag = (info.delta.x - info.delta.y);
+              let friction = 0.4;
+
+              // THE RESISTANCE ZONE: Between 60 and 90 degrees clockwise, the disc heavily resists turning.
+              if (current > 60 && drag > 0) {
+                friction = 0.08; 
+              }
+
+              let newRot = current + (drag * friction); 
+              
+              // THE NEW HARD CLAMPS
+              if (newRot < -360) newRot = -360; // Allows free-spinning backward
+              if (newRot > 91) newRot = 91;     // Hard physical lock just past the flashbang
+              
+              rotation.set(newRot); 
             }}
+            onMouseEnter={() => setActiveZone("cd")}
           >
-            {/* The image layers must have pointer-events-auto and proper cursor styling */}
-            <div className={`relative w-full h-full rounded-full overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} pointer-events-auto`} onMouseEnter={() => setActiveZone("cd")}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+            {/* INNER DISC - NOW DRIVEN BY THE VISUAL SNAP */}
+            <motion.div className="relative w-full h-full rounded-full" style={{ rotate: visualCdRotation }}>
+              
+              {/* SCRATCHED ASSET */}
               <motion.img 
                 src="/yeezus-cd.webp" 
-                alt="Yeezus CD"
                 className="absolute inset-0 w-full h-full object-cover rounded-full pointer-events-none" 
-                style={{ filter: cdFilter }}
+                style={{ opacity: brutalistOpacity }}
               />
-            </div>
+              
+              {/* CLEAN ASSET */}
+              <motion.img 
+                src="/yeezus-disc-clean.webp" 
+                className="absolute inset-0 w-full h-full object-cover rounded-full pointer-events-none drop-shadow-2xl" 
+                style={{ opacity: cleanRoomOpacity }}
+              />
+              
+              {/* RED TAPE HAS BEEN COMPLETELY PURGED */}
+              
+            </motion.div>
           </motion.div>
+          </motion.div>
+        </div>
 
           {/* INDUSTRIAL HUD (BRUTALISM) */}
           <motion.div className="absolute inset-0 z-40 pointer-events-none overflow-hidden" style={{ opacity: elementOpacity }}>
@@ -314,7 +330,12 @@ export default function Hero({ rawCode }: HeroProps) {
             </div>
           </motion.div>
         </div>
-      </div>
-    </section>
+
+      {/* LAYER 999: ABSOLUTE FLASHBANG OVERLAY */}
+      <motion.div 
+        className="fixed inset-0 z-[999] pointer-events-none bg-white"
+        style={{ opacity: transitionFlash }}
+      />
+    </motion.main>  
   );
 }

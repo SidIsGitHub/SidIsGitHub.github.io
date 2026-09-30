@@ -125,7 +125,7 @@ export default function CursorMask({ children, scrollYProgress }: CursorMaskProp
          {children}
       </div>
 
-      <SurveillanceTerminal mouseX={mouseX} mouseY={mouseY} scrollYProgress={scrollYProgress}/>
+      <SurveillanceTerminal />
     </>
   );
 

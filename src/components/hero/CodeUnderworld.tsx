@@ -1,12 +1,22 @@
 "use client";
 
-export default function CodeUnderworld({ activeZone, rawCode }: { activeZone?: string, rawCode: string }) {
+import { motion, useAnimationFrame, useMotionValue, MotionValue } from "framer-motion";
+
+export default function CodeUnderworld({ 
+  activeZone, 
+  rawCode, 
+  speedMultiplier 
+}: { 
+  activeZone?: string, 
+  rawCode: string, 
+  speedMultiplier?: MotionValue<number> 
+}) {
   const codeString = rawCode || "SYSTEM_BOOT...";
   
   // Flatten the string (remove explicit line breaks) and add spacing
   const continuousCode = codeString.replace(/\n/g, '   ');
   
-  // 3. Multiply it massively to ensure a full edge-to-edge matrix
+  // Multiply it massively to ensure a full edge-to-edge matrix
   const massiveCode = continuousCode.repeat(100);
 
   // Strict regex pipeline: Escape HTML first, then colorize.
@@ -28,12 +38,35 @@ export default function CodeUnderworld({ activeZone, rawCode }: { activeZone?: s
     return html;
   };
 
+  const tesseractRotation = useMotionValue(0);
+
+  useAnimationFrame((time, delta) => {
+    // Default multiplier is 1 if not provided. Spikes up to 4 during heavy CD spin.
+    const currentSpeed = speedMultiplier ? speedMultiplier.get() : 1; 
+    
+    // Rotate base speed * the kinetic spike
+    tesseractRotation.set(tesseractRotation.get() + (delta * 0.05 * currentSpeed));
+  });
+
   return (
-    // Removed p-8 to allow edge-to-edge bleeding
-    <div className="fixed inset-0 z-0 w-screen h-screen bg-[#060608] overflow-hidden pointer-events-none">
+    <div className="fixed inset-0 z-0 w-screen h-screen bg-[#060608] overflow-hidden pointer-events-none flex items-center justify-center">
+      {/* THE UNIFIED KINETIC TESSERACT */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-40 z-0">
+        <motion.div style={{ rotateX: tesseractRotation, rotateY: tesseractRotation }} className="relative w-96 h-96 [transform-style:preserve-3d]">
+          <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100">
+             <rect x="25" y="25" width="50" height="50" fill="none" stroke="#D41111" strokeWidth="2" />
+             <rect x="10" y="10" width="80" height="80" fill="none" stroke="#D41111" strokeWidth="2" />
+             {/* Connecting lines */}
+             <line x1="10" y1="10" x2="25" y2="25" stroke="#D41111" strokeWidth="2" />
+             <line x1="90" y1="10" x2="75" y2="25" stroke="#D41111" strokeWidth="2" />
+             <line x1="10" y1="90" x2="25" y2="75" stroke="#D41111" strokeWidth="2" />
+             <line x1="90" y1="90" x2="75" y2="75" stroke="#D41111" strokeWidth="2" />
+          </svg>
+        </motion.div>
+      </div>
+
       <pre 
-        // break-all and whitespace-normal force the text to hit the exact right edge before wrapping
-        className="w-[105vw] h-[105vh] -translate-x-2 -translate-y-2 font-mono text-[1.05rem] leading-[1.7] tracking-tight text-[#EBEBEB] break-all whitespace-normal text-justify opacity-85"
+        className="absolute inset-0 w-[105vw] h-[105vh] -translate-x-2 -translate-y-2 font-mono text-[1.05rem] leading-[1.7] tracking-tight text-[#EBEBEB] break-all whitespace-normal text-justify opacity-85 z-10"
         dangerouslySetInnerHTML={{ __html: formatCode(massiveCode) }}
       />
     </div>
