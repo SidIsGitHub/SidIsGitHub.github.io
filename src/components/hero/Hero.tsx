@@ -115,8 +115,7 @@ export default function Hero({ rawCode }: HeroProps) {
   const brutalistOpacity = useTransform(smoothRotation, [-360, 0, 89.9, 90], [1, 1, 1, 0]);
   const cleanRoomOpacity = useTransform(smoothRotation, [-360, 0, 89.9, 90], [0, 0, 0, 1]);
 
-  // 3. Cinematic Flashbang (Peaks at 90, instantly dies by 90.1)
-  const transitionFlash = useTransform(smoothRotation, [89, 90, 90.1, 91], [0, 1, 0, 0]);
+
 
   // The Mechanical Snap (Visual Rotation)
   // While the user drags to 90, the image rotates 1:1. 
@@ -126,6 +125,17 @@ export default function Hero({ rawCode }: HeroProps) {
   const [activeProjectKey, setActiveProjectKey] = useState<keyof typeof PROJECT_REGISTRY>("fluxx");
   const [isDragging, setIsDragging] = useState(false);
   const [hasBooted, setHasBooted] = useState(false);
+  const [hasFlashed, setHasFlashed] = useState(false);
+
+  // Listens to the raw rotation. The moment it crosses 89, it triggers the flash state.
+  useMotionValueEvent(rotation, "change", (latest) => {
+    if (latest >= 89 && !hasFlashed) {
+      setHasFlashed(true);
+    } else if (latest < 80 && hasFlashed) {
+      // Resets the flashbang if the user spins the CD back to the start
+      setHasFlashed(false); 
+    }
+  });
 
   useMotionValueEvent(rotation, "change", (latest) => {
     // Normalize rotation to a clean 0-360 loop
@@ -331,10 +341,13 @@ export default function Hero({ rawCode }: HeroProps) {
           </motion.div>
         </div>
 
-      {/* LAYER 999: ABSOLUTE FLASHBANG OVERLAY */}
+      {/* LAYER 999: STATE-DRIVEN FLASHBANG OVERLAY */}
       <motion.div 
         className="fixed inset-0 z-[999] pointer-events-none bg-white"
-        style={{ opacity: transitionFlash }}
+        initial={{ opacity: 0 }}
+        // When hasFlashed turns true, it forces a 0 -> 1 -> 0 opacity animation over 0.6 seconds
+        animate={{ opacity: hasFlashed ? [0, 1, 0] : 0 }}
+        transition={{ duration: 0.6, ease: "circOut" }}
       />
     </motion.main>  
   );
