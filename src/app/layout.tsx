@@ -5,28 +5,6 @@ export const metadata: Metadata = {
   title: "Siddhant Bansod | Repel Mediocrity",
   description: "Systems architecture, autonomous hardware, and kinetic engineering. The technical dossier of Siddhant Bansod.",
   metadataBase: new URL("https://siddhantbansod.me"),
-  openGraph: {
-    title: "Siddhant Bansod | Repel Mediocrity",
-    description: "Systems architecture, autonomous hardware, and kinetic engineering.",
-    url: "https://siddhantbansod.me",
-    siteName: "Siddhant Bansod",
-    images: [
-      {
-        url: "https://siddhantbansod.me/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Siddhant Bansod - Repel Mediocrity",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Siddhant Bansod | Repel Mediocrity",
-    description: "Systems architecture, autonomous hardware, and kinetic engineering.",
-    images: ["https://siddhantbansod.me/og-image.jpg"],
-  },
 };
 
 export default function RootLayout({
