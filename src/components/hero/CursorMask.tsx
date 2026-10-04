@@ -8,9 +8,10 @@ import { BackgroundAnxiety } from "./BackgroundAnxiety";
 interface CursorMaskProps {
   children: React.ReactNode;
   scrollYProgress: MotionValue<number>;
+  isHoveringCD?: boolean;
 }
 
-export default function CursorMask({ children, scrollYProgress }: CursorMaskProps) {
+export default function CursorMask({ children, scrollYProgress, isHoveringCD = false }: CursorMaskProps) {
   const [isMobile, setIsMobile] = useState(false);
 
   const mouseX = useMotionValue(0);
@@ -44,7 +45,15 @@ export default function CursorMask({ children, scrollYProgress }: CursorMaskProp
       setIsMobile(window.matchMedia("(pointer: coarse)").matches);
     };
     checkMobile();
-    window.addEventListener("resize", checkMobile);
+    
+    let resizeTimer: number;
+    const handleResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        checkMobile();
+      }, 200);
+    };
+    window.addEventListener("resize", handleResize);
 
     if (isMobile) {
       mouseX.set(window.innerWidth / 2);
@@ -67,7 +76,8 @@ export default function CursorMask({ children, scrollYProgress }: CursorMaskProp
 
     return () => {
       window.removeEventListener("mousemove", updateMousePosition);
-      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("resize", handleResize);
+      window.clearTimeout(resizeTimer);
     };
   }, [isMobile, mouseX, mouseY]);
 
@@ -150,29 +160,29 @@ export default function CursorMask({ children, scrollYProgress }: CursorMaskProp
           </g>
 
           <mask id="cursor-xor-105" maskUnits="userSpaceOnUse">
-            <motion.circle cx={mouseX} cy={mouseY} r="105" fill="white" filter="url(#jagged-edge)" />
+            <motion.circle cx={mouseX} cy={mouseY} initial={{ r: 105 }} animate={{ r: isHoveringCD ? 0 : 105 }} transition={{ duration: 0.2 }} fill="white" filter="url(#jagged-edge)" />
           </mask>
           <mask id="cursor-xor-210" maskUnits="userSpaceOnUse">
-            <motion.circle cx={mouseX} cy={mouseY} r="210" fill="white" filter="url(#jagged-edge)" />
+            <motion.circle cx={mouseX} cy={mouseY} initial={{ r: 210 }} animate={{ r: isHoveringCD ? 0 : 210 }} transition={{ duration: 0.2 }} fill="white" filter="url(#jagged-edge)" />
           </mask>
 
           <mask id="inner-hole-mask" maskUnits="userSpaceOnUse">
             <rect width="100%" height="100%" fill="white" />
             <use href="#dead-zones" fill="black" />
-            <motion.circle cx={mouseX} cy={mouseY} r="105" fill="black" filter="url(#jagged-edge)" />
+            <motion.circle cx={mouseX} cy={mouseY} initial={{ r: 105 }} animate={{ r: isHoveringCD ? 0 : 105 }} transition={{ duration: 0.2 }} fill="black" filter="url(#jagged-edge)" />
             <use href="#dead-zones" fill="white" mask="url(#cursor-xor-105)" />
           </mask>
 
           <mask id="clean-layer-mask" maskUnits="userSpaceOnUse">
             <rect width="100%" height="100%" fill="white" />
             <use href="#dead-zones" fill="black" />
-            <motion.circle cx={mouseX} cy={mouseY} r="210" fill="black" filter="url(#jagged-edge)" />
+            <motion.circle cx={mouseX} cy={mouseY} initial={{ r: 210 }} animate={{ r: isHoveringCD ? 0 : 210 }} transition={{ duration: 0.2 }} fill="black" filter="url(#jagged-edge)" />
             <use href="#dead-zones" fill="white" mask="url(#cursor-xor-210)" />
           </mask>
 
           <mask id="warped-layer-mask" maskUnits="userSpaceOnUse">
             <rect width="100%" height="100%" fill="black" />
-            <motion.circle cx={mouseX} cy={mouseY} r="212" fill="white" filter="url(#jagged-edge)" />
+            <motion.circle cx={mouseX} cy={mouseY} initial={{ r: 212 }} animate={{ r: isHoveringCD ? 0 : 212 }} transition={{ duration: 0.2 }} fill="white" filter="url(#jagged-edge)" />
           </mask>
         </defs>
       </svg>

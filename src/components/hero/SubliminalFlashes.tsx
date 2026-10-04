@@ -14,12 +14,12 @@ const SUBLIMINAL_ASSETS = [
   "/subliminal/story.jpeg"
 ];
 
-export function SubliminalFlashes({ velocity }: { velocity: MotionValue<number> }) {
+export function SubliminalFlashes({ velocity, rotation }: { velocity: MotionValue<number>; rotation: MotionValue<number> }) {
   const [flash, setFlash] = useState<{ src: string; x: number; y: number; scale: number; rotate: number } | null>(null);
 
   useMotionValueEvent(velocity, "change", (latestVelocity) => {
-    // Only trigger on very fast scroll (velocity magnitude > 800)
-    if (Math.abs(latestVelocity) > 800) {
+    // Only trigger on very fast scroll (velocity magnitude > 800) and in Brutalist state
+    if (Math.abs(latestVelocity) > 800 && rotation.get() < 90) {
       // 40% chance to trigger so it's unpredictable
       if (Math.random() > 0.6 && !flash) {
         const maxX = typeof window !== 'undefined' ? window.innerWidth - 300 : 1000;
