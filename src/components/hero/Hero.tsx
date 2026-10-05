@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useScroll, useTransform, useMotionValueEvent, useVelocity, useSpring, useMotionTemplate, motion, useMotionValue, MotionValue } from "framer-motion";
-import ChaosLayer from "./ChaosLayer";
+import { useScroll, useTransform, useMotionValueEvent, useVelocity, useSpring, useMotionTemplate, motion, useMotionValue, MotionValue, animate } from "framer-motion";
 import CodeUnderworld from "./CodeUnderworld";
 import CursorMask from "./CursorMask";
 import PremiumShowcase from "./PremiumShowcase";
@@ -57,30 +56,56 @@ export default function Hero({ rawCode }: HeroProps) {
   const rotation = useMotionValue(0);
   const smoothRotation = useSpring(rotation, { damping: 40, stiffness: 300 });
 
+  const snapToNearestCheckpoint = (currentVal: number) => {
+    const checkpoints = [160, 230, 300, 370];
+    const closest = checkpoints.reduce((prev, curr) => 
+      Math.abs(curr - currentVal) < Math.abs(prev - currentVal) ? curr : prev
+    );
+    
+    // If within 20 units (~25% of the 70-unit gap), snap to it
+    if (Math.abs(currentVal - closest) <= 20) {
+      animate(rotation, closest, { 
+        type: "spring", 
+        stiffness: 250, 
+        damping: 30,
+        mass: 1 
+      });
+    }
+  };
+
   useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout;
+
     const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
       let current = rotation.get();
       
-      // Normalize trackpad vs mouse wheel delta
-      let rawDelta = e.deltaY;
-      let scrollFriction = 0.15; 
+      // DYNAMIC FRICTION CURVE:
+      // If rotation < 100 (Initializer phase), use heavy friction (0.035) so it lasts longer.
+      // If rotation >= 100 (Project phase), use light friction (0.12) to break snap-wells.
+      let dynamicMultiplier = current < 100 ? 0.035 : 0.12; 
       
-      // Maintain the heavy friction "click" zone between 60° and 90°
-      if (current > 60 && current < 90 && rawDelta > 0) {
-        scrollFriction = 0.03;
-      }
-
-      let newRot = current + (rawDelta * scrollFriction);
+      let newRot = current + (e.deltaY * dynamicMultiplier);
 
       // Enforce the exact same clamps as the drag physics
       if (newRot < -360) newRot = -360;
       if (newRot > 370) newRot = 370; 
 
       rotation.set(newRot);
+
+      // Clear previous timeout and set a new one
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        // Fires 150ms after the wheel stops moving
+        snapToNearestCheckpoint(rotation.get());
+      }, 150);
     };
 
-    window.addEventListener("wheel", handleWheel, { passive: true });
-    return () => window.removeEventListener("wheel", handleWheel);
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      clearTimeout(scrollTimeout);
+    };
   }, [rotation]);
   const spinVelocity = useVelocity(rotation);
   const newSmoothVelocity = useSpring(spinVelocity, { damping: 20, stiffness: 400 });
@@ -120,6 +145,9 @@ export default function Hero({ rawCode }: HeroProps) {
   // 1. Initializer Morph (Wider Threshold: 95° to 105°)
   // Fades in at 89, but never fades out. It becomes the permanent header.
   const initializerOpacity = useTransform(smoothRotation, [88.9, 90], [0, 1]);
+
+  // Evaporates early during the initial scroll
+  const microUiOpacity = useTransform(smoothRotation, [-360, 0, 80, 370], [1, 1, 0, 0]);
 
   // 1. Text Physics (Starts higher at 35vh, moves to top-left)
   const initTop = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["35vh", "35vh", "35vh", "5vh", "5vh"]);
@@ -199,10 +227,7 @@ export default function Hero({ rawCode }: HeroProps) {
         {/* Layer 2: TEAR MASK WRAPPING THE ENTIRE UI */}
         <motion.div className="absolute inset-0 z-20" style={{ opacity: brutalistOpacity }}>
           <CursorMask scrollYProgress={scrollYProgress} isHoveringCD={isHoveringCD}>
-            {/* CHAOS LAYER (Black Background) */}
-            <div className="absolute inset-0 pointer-events-auto" onMouseEnter={() => setActiveZone("surface")}>
-              <ChaosLayer />
-            </div>
+
 
             {/* 3. The Typography (z-0) - Sits flat on the background */}
             {/* ONLY UPDATE THIS SPECIFIC WRAPPER AND ITS HEADINGS */}
@@ -246,6 +271,36 @@ export default function Hero({ rawCode }: HeroProps) {
           </motion.div>
         </motion.div>
 
+        {/* LAYER 2.1: BRUTALIST MICRO-TYPOGRAPHY */}
+        <motion.div 
+          className="fixed inset-0 z-10 pointer-events-none p-8 flex flex-col justify-between mix-blend-difference text-white/80 uppercase tracking-widest text-[0.65rem] sm:text-xs font-mono"
+          style={{ opacity: microUiOpacity }}
+        >
+          {/* Top Meta Data */}
+          <div className="flex justify-between w-full">
+            <div className="flex flex-col gap-1">
+              <span>Siddhant Bansod</span>
+              <span className="opacity-50">Selected Works // 2026</span>
+            </div>
+            <div className="flex flex-col gap-1 text-right">
+              <span>System Status: Online</span>
+              <span className="opacity-50">Vol. 01</span>
+            </div>
+          </div>
+
+          {/* Bottom Interaction Cue */}
+          <div className="flex justify-between items-end w-full">
+            <div className="flex flex-col gap-1">
+              <span>Interact</span>
+              <span className="opacity-50">[ Scroll or Drag ]</span>
+            </div>
+            <div className="flex flex-col gap-1 text-right animate-pulse">
+              <span>Unlock</span>
+              <span>Timeline ↓</span>
+            </div>
+          </div>
+        </motion.div>
+
         {/* LAYER 2.5: THE MORPHING HEADER */}
         <motion.div 
           className="fixed z-20 pointer-events-none"
@@ -259,7 +314,7 @@ export default function Hero({ rawCode }: HeroProps) {
             transformOrigin: "top left"
           }}
         >
-          <h1 className="text-[15vw] font-black tracking-tighter text-[#1D1D1F] leading-none whitespace-nowrap">
+          <h1 className="text-[15vw] font-black tracking-tighter text-[#1D1D1F] leading-none whitespace-nowrap mix-blend-exclusion">
             PROJECTS
           </h1>
         </motion.div>
@@ -282,12 +337,19 @@ export default function Hero({ rawCode }: HeroProps) {
             cursor: isDragging ? "grabbing" : "grab",
           }} 
           onPanStart={() => setIsDragging(true)}
-          onPanEnd={() => setIsDragging(false)}
+          onPanEnd={() => {
+            setIsDragging(false);
+            snapToNearestCheckpoint(rotation.get());
+          }}
           onPan={(_, info) => {
             let current = rotation.get();
             let drag = (info.delta.x - info.delta.y);
-            let friction = current > 60 && drag > 0 ? 0.08 : 0.4;
-            let newRot = current + (drag * friction); 
+            
+            // DYNAMIC PAN FRICTION:
+            // Heavy drag resistance during intro, lighter resistance during projects
+            let dynamicFriction = current < 100 ? 0.05 : 0.25; 
+            
+            let newRot = current + (drag * dynamicFriction); 
             
             if (newRot < -360) newRot = -360; 
             if (newRot > 370) newRot = 370; 
@@ -311,26 +373,29 @@ export default function Hero({ rawCode }: HeroProps) {
              style={{ opacity: cdCleanOpacity, rotate: smoothRotation }} 
            />
 
-           {/* STATE 2: THE APPLE PROGRESS BAR UI (Fades in during morph) */}
+           {/* STATE 2: THE PREMIUM APPLE PROGRESS UI */}
            <motion.div 
-              className="absolute inset-0 w-full h-full px-6 flex items-center pointer-events-none"
+              className="absolute bottom-12 left-1/2 -translate-x-1/2 w-[320px] h-14 bg-white/70 backdrop-blur-2xl border border-white/50 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-center px-6 pointer-events-none z-50"
               style={{ opacity: barUiOpacity }}
            >
-              {/* The Track */}
-              <div className="relative w-full h-2 bg-black/10 rounded-full overflow-hidden">
-                {/* The Fill */}
+              {/* Ultra-thin track */}
+              <div className="relative w-full h-[4px] bg-black/10 rounded-full">
+                
+                {/* Dynamic dark fill */}
                 <motion.div 
                   className="absolute top-0 left-0 h-full bg-[#1D1D1F] rounded-full"
                   style={{ width: progressFill }}
                 />
-              </div>
-              
-              {/* Optional: Tiny aesthetic checkpoints for the 4 projects */}
-              <div className="absolute inset-0 px-6 flex justify-between items-center pointer-events-none">
-                <div className="w-3 h-3 rounded-full bg-white border-2 border-[#1D1D1F] shadow-sm" />
-                <div className="w-3 h-3 rounded-full bg-white border-2 border-[#1D1D1F] shadow-sm" />
-                <div className="w-3 h-3 rounded-full bg-white border-2 border-[#1D1D1F] shadow-sm" />
-                <div className="w-3 h-3 rounded-full bg-white border-2 border-[#1D1D1F] shadow-sm" />
+                
+                {/* HIG-Compliant Circular Thumbs */}
+                <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 w-full flex justify-between items-center">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div 
+                      key={i} 
+                      className="w-4 h-4 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] border border-black/5"
+                    />
+                  ))}
+                </div>
               </div>
            </motion.div>
         </motion.div>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, useMotionValue, useVelocity, useSpring, useTransform, useMotionValueEvent, MotionValue } from "framer-motion";
-import { SurveillanceTerminal } from "./SurveillanceTerminal";
 import { BackgroundAnxiety } from "./BackgroundAnxiety";
 
 interface CursorMaskProps {
@@ -114,28 +113,11 @@ export default function CursorMask({ children, scrollYProgress, isHoveringCD = f
         </div>
       </div>
 
-      <div className="absolute inset-0 p-8 z-0 pointer-events-none flex justify-between items-start font-mono text-[0.75rem] md:text-[0.85vw] leading-tight tracking-tight text-[#050505] opacity-75 mix-blend-multiply">
-        <ul className="text-left font-bold uppercase transform rotate-1 translate-y-4 translate-x-2">
-          <li>FastAPI_Engine</li>
-          <li>NextJS_Edge</li>
-          <li>OpenCV_Vision</li>
-          <li>ESP32_Telemetry</li>
-          <li>LangChain_RAG</li>
-        </ul>
-        <ul className="text-right font-bold uppercase transform -rotate-1 -translate-x-4 -skew-y-2">
-          <li>CBR-200168</li>
-          <li>FLUXX_SYS</li>
-          <li>MEDIPANDA_AI</li>
-          <li>IHATEPDFS_BOT</li>
-          <li>PROMPTWARS_26</li>
-        </ul>
-      </div>
 
       <div className="relative z-10 w-full h-full">
          {children}
       </div>
 
-      <SurveillanceTerminal />
     </>
   );
 
@@ -153,11 +135,7 @@ export default function CursorMask({ children, scrollYProgress, isHoveringCD = f
             <feDisplacementMap ref={surfaceWarpRef} in="SourceGraphic" in2="warpNoise" scale="0" xChannelSelector="R" yChannelSelector="G" edgeMode="duplicate" />
           </filter>
 
-          <g id="dead-zones">
-            <rect x="5%" y="40%" width="3%" height="15%" />
-            <rect x="82%" y="28%" width="8%" height="6%" />
-            <rect x="60%" y="80%" width="20%" height="2%" />
-          </g>
+
 
           <mask id="cursor-xor-105" maskUnits="userSpaceOnUse">
             <motion.circle cx={mouseX} cy={mouseY} initial={{ r: 105 }} animate={{ r: isHoveringCD ? 0 : 105 }} transition={{ duration: 0.2 }} fill="white" filter="url(#jagged-edge)" />
@@ -168,16 +146,12 @@ export default function CursorMask({ children, scrollYProgress, isHoveringCD = f
 
           <mask id="inner-hole-mask" maskUnits="userSpaceOnUse">
             <rect width="100%" height="100%" fill="white" />
-            <use href="#dead-zones" fill="black" />
             <motion.circle cx={mouseX} cy={mouseY} initial={{ r: 105 }} animate={{ r: isHoveringCD ? 0 : 105 }} transition={{ duration: 0.2 }} fill="black" filter="url(#jagged-edge)" />
-            <use href="#dead-zones" fill="white" mask="url(#cursor-xor-105)" />
           </mask>
 
           <mask id="clean-layer-mask" maskUnits="userSpaceOnUse">
             <rect width="100%" height="100%" fill="white" />
-            <use href="#dead-zones" fill="black" />
             <motion.circle cx={mouseX} cy={mouseY} initial={{ r: 210 }} animate={{ r: isHoveringCD ? 0 : 210 }} transition={{ duration: 0.2 }} fill="black" filter="url(#jagged-edge)" />
-            <use href="#dead-zones" fill="white" mask="url(#cursor-xor-210)" />
           </mask>
 
           <mask id="warped-layer-mask" maskUnits="userSpaceOnUse">
