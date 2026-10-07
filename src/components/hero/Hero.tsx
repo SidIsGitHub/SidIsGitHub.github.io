@@ -168,9 +168,9 @@ export default function Hero({ rawCode }: HeroProps) {
   const cdClip = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 100px))", "inset(0px round calc(0% + 100px))"]);
 
   // Layer 3 Surface Materials
-  const cdBg = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0.8)", "rgba(255,255,255,0.8)"]);
-  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.3)", "1px solid rgba(255,255,255,0.3)"]);
-  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)"]);
+  const cdBg = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)"]);
+  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)"]);
+  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(0px)", "blur(0px)"]);
 
   // Internal Fades (CD fades out early, Bar UI fades in late)
   const cdBrutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360], [1, 1, 1, 0, 0, 0, 0]);
@@ -214,7 +214,8 @@ export default function Hero({ rawCode }: HeroProps) {
     >
       {/* Sticky container — keeps the visual viewport locked while scrolling drives physics */}
       <div className="sticky top-0 w-full h-dvh overflow-hidden">
-        
+
+
         {/* The Subliminal Engine - Passes the absolute magnitude of the scroll velocity */}
         <SubliminalFlashes velocity={velocityMagnitude} rotation={smoothRotation} />
 
@@ -229,30 +230,25 @@ export default function Hero({ rawCode }: HeroProps) {
           <CursorMask scrollYProgress={scrollYProgress} isHoveringCD={isHoveringCD}>
 
 
-            {/* 3. The Typography (z-0) - Sits flat on the background */}
-            {/* ONLY UPDATE THIS SPECIFIC WRAPPER AND ITS HEADINGS */}
+            {/* LAYER 1: BASELINE TYPOGRAPHY (TEMPORARY) */}
             <motion.div 
-              className="absolute inset-0 flex flex-col items-center justify-start pt-[12vh] z-20 origin-center pointer-events-none"
-              style={{ 
-                scale: textZScale,
-                filter: textBlur,
-                opacity: elementOpacity,
-                skewX: shear, 
-                x: jitter     
-              }}
+              className="fixed inset-0 z-10 pointer-events-none flex items-center justify-center flex-col"
+              style={{ opacity: brutalistOpacity }}
             >
-              <motion.h1 
-                className="text-[17vw] font-black leading-[0.75] uppercase text-center text-[#050505] mix-blend-multiply"
-                style={{ textShadow: rgbShadow }} 
-              >
+              <h1 className="text-[15vw] font-black tracking-tighter text-[#E8E8E6] leading-none opacity-90">
                 SIDDHANT
-              </motion.h1>
-              <motion.h2 
-                className="text-[3.5vw] font-black leading-none tracking-widest uppercase mt-4 text-[#8a0303] mix-blend-multiply opacity-90"
-                style={{ textShadow: rgbShadow, x: inverseJitter }}
-              >
-                REPEL MEDIOCRITY
-              </motion.h2>
+              </h1>
+            </motion.div>
+
+            {/* LAYER 1.5: FOREGROUND PHYSICAL TEXTURE */}
+            <motion.div 
+              className="fixed inset-0 z-20 pointer-events-none"
+              style={{ opacity: brutalistOpacity }}
+            >
+              <div 
+                className="absolute inset-0 opacity-[0.65] mix-blend-exclusion"
+                style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }}
+              />
             </motion.div>
           </CursorMask>
         </motion.div>
@@ -373,33 +369,39 @@ export default function Hero({ rawCode }: HeroProps) {
              style={{ opacity: cdCleanOpacity, rotate: smoothRotation }} 
            />
 
-           {/* STATE 2: THE PREMIUM APPLE PROGRESS UI */}
-           <motion.div 
-              className="absolute bottom-12 left-1/2 -translate-x-1/2 w-[320px] h-14 bg-white/70 backdrop-blur-2xl border border-white/50 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-center px-6 pointer-events-none z-50"
-              style={{ opacity: barUiOpacity }}
-           >
-              {/* Ultra-thin track */}
-              <div className="relative w-full h-[4px] bg-black/10 rounded-full">
-                
-                {/* Dynamic dark fill */}
-                <motion.div 
-                  className="absolute top-0 left-0 h-full bg-[#1D1D1F] rounded-full"
-                  style={{ width: progressFill }}
-                />
-                
-                {/* HIG-Compliant Circular Thumbs */}
-                <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 w-full flex justify-between items-center">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div 
-                      key={i} 
-                      className="w-4 h-4 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] border border-black/5"
-                    />
-                  ))}
-                </div>
-              </div>
-           </motion.div>
+
         </motion.div>
       </div>
+
+   {/* STATE 2: DYNAMIC ISLAND TIMELINE UI */}
+   <motion.div 
+      className="absolute bottom-12 left-1/2 -translate-x-1/2 w-[320px] h-[52px] bg-[#000000] shadow-[0_16px_32px_rgba(0,0,0,0.3)] border border-white/10 flex items-center justify-center px-6 pointer-events-none z-[9999]"
+      style={{ opacity: barUiOpacity, borderRadius: '999px' }}
+   >
+      {/* Track container */}
+      <div className="relative w-full h-[4px] bg-[#333333]" style={{ borderRadius: '999px' }}>
+        
+        {/* Pure White Apple Fill */}
+        <motion.div 
+          className="absolute top-0 left-0 h-full bg-white z-10"
+          style={{ width: progressFill, borderRadius: '999px' }}
+        />
+        
+        {/* Perfectly Circular Checkpoint Nodes */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full flex justify-between items-center z-20">
+          {[0, 1, 2, 3].map((i) => (
+            <div 
+              key={i} 
+              className="w-[18px] h-[18px] bg-black border-[3px] border-[#444444] shadow-sm flex items-center justify-center"
+              style={{ borderRadius: '50%' }}
+            >
+              {/* Optional inner dot for active state tracking */}
+              <div className="w-[4px] h-[4px] bg-white/30" style={{ borderRadius: '50%' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+   </motion.div>
 
       {/* LAYER 999: UNIFIED PHYSICS FLASHBANG */}
       <motion.div 
