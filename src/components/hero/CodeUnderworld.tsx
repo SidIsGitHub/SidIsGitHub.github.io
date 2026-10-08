@@ -47,10 +47,10 @@ export default function CodeUnderworld({
   });
 
   return (
-    <div className="fixed inset-0 z-0 w-screen h-screen bg-[#050505] overflow-hidden pointer-events-none flex items-center justify-center">
+    <div className="fixed inset-0 z-0 w-screen h-screen bg-[#050505] overflow-hidden pointer-events-none hidden md:flex items-center justify-center">
       {/* THE UNIFIED KINETIC TESSERACT */}
       <div className="absolute inset-0 flex items-center justify-center opacity-40 z-0">
-        <motion.div style={{ rotateX: tesseractRotation, rotateY: tesseractRotation }} className="relative w-96 h-96 [transform-style:preserve-3d]">
+        <motion.div style={{ rotateX: tesseractRotation, rotateY: tesseractRotation }} className="relative w-[60vw] h-[60vw] md:w-96 md:h-96 [transform-style:preserve-3d]">
           <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100">
              <rect x="25" y="25" width="50" height="50" fill="none" stroke="#D41111" strokeWidth="2" />
              <rect x="10" y="10" width="80" height="80" fill="none" stroke="#D41111" strokeWidth="2" />
@@ -64,7 +64,7 @@ export default function CodeUnderworld({
       </div>
 
       <pre 
-        className="absolute inset-0 w-[105vw] h-[105vh] -translate-x-2 -translate-y-2 font-mono text-[1.05rem] leading-[1.7] tracking-tight text-white break-all whitespace-normal text-justify opacity-85 z-10"
+        className="absolute inset-0 w-[105vw] h-[105vh] -translate-x-2 -translate-y-2 font-mono text-[0.8rem] md:text-[1.05rem] leading-[1.7] tracking-tight text-white break-all whitespace-normal text-justify opacity-85 z-10"
         dangerouslySetInnerHTML={{ __html: formatCode(massiveCode) }}
       />
     </div>

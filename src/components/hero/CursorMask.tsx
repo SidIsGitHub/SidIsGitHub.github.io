@@ -125,7 +125,7 @@ export default function CursorMask({ children, scrollYProgress, isHoveringCD = f
   return (
     <>
       {/* SVG FILTER FOR JAGGED METAL TEAR */}
-      <svg className="fixed inset-0 w-full h-full pointer-events-none z-0">
+      <svg className="fixed inset-0 w-full h-full pointer-events-none z-0 opacity-[0.2] md:opacity-[0.85]">
         <defs>
           <filter id="metal-tear" x="-300%" y="-300%" width="700%" height="700%">
             <feTurbulence type="fractalNoise" baseFrequency="0.015 0.04" numOctaves="3" result="noise" />
@@ -147,12 +147,7 @@ export default function CursorMask({ children, scrollYProgress, isHoveringCD = f
       </svg>
 
       <motion.div
-        className="absolute inset-0 z-10 w-screen h-screen pointer-events-auto"
-        style={{
-          WebkitMaskImage: "url(#cursor-tear-mask)",
-          maskImage: "url(#cursor-tear-mask)",
-          WebkitMaskRepeat: "no-repeat",
-        }}
+        className="absolute inset-0 z-10 w-screen h-screen pointer-events-auto md:[mask-image:url(#cursor-tear-mask)] md:[-webkit-mask-image:url(#cursor-tear-mask)] md:[mask-repeat:no-repeat] md:[-webkit-mask-repeat:no-repeat]"
       >
         {surfaceUI}
       </motion.div>

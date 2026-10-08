@@ -45,18 +45,18 @@ export function SubliminalFlashes({ velocity, rotation }: { velocity: MotionValu
 
   return (
     <div 
-      className="fixed z-[9999] pointer-events-none opacity-100"
+      className="fixed z-[9999] pointer-events-none opacity-100 flex items-center justify-center top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:top-[var(--y)] md:left-[var(--x)] md:translate-x-0 md:translate-y-0"
       style={{
-        top: flash.y,
-        left: flash.x,
+        '--x': `${flash.x}px`,
+        '--y': `${flash.y}px`,
         transform: `scale(${flash.scale}) rotate(${flash.rotate}deg)`,
-      }}
+      } as React.CSSProperties}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img 
         src={flash.src} 
         alt="subliminal flash" 
-        className="max-w-[400px] h-auto shadow-2xl" 
+        className="object-contain w-[80vw] max-w-[280px] md:w-[35vw] md:max-w-none h-auto shadow-2xl" 
       />
     </div>
   );

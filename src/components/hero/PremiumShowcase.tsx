@@ -82,20 +82,24 @@ function ProjectCard({
 
   return (
     <motion.div
-      className="w-[60vw] shrink-0"
+      className="relative w-[90vw] max-w-[400px] md:w-[60vw] md:max-w-none shrink-0"
       style={{
         scale: cardScale,
         opacity: cardOpacity,
         filter: cardFilter,
       }}
+      animate={{ y: [0, -12, 0] }}
+      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
     >
       {/* ── Card Surface ── */}
-      <div className="relative bg-white/40 backdrop-blur-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/60 rounded-3xl overflow-hidden">
+      <div className="relative bg-white/40 backdrop-blur-3xl border border-white/80 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] rounded-[32px] overflow-hidden">
+        {/* INNER SPECULAR HIGHLIGHT */}
+        <div className="absolute inset-0 border border-white/40 rounded-[32px] pointer-events-none mix-blend-overlay z-50"></div>
         
         {/* ── Image Region ── */}
         <div className="relative h-[38vh] md:h-[44vh] overflow-hidden">
           <motion.div
-            className={`absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#f5f5f7] via-[#e5e5ea] to-[#d1d1d6]`}
+            className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#f5f5f7] via-[#ebebef] to-[#d1d1d6]"
             style={{ x: imageX }}
           >
             {/* Architectural grid overlay */}
@@ -178,14 +182,14 @@ export default function PremiumShowcase({ rotation }: PremiumShowcaseProps) {
   );
 
   return (
-    <div className="absolute inset-0 flex flex-col overflow-hidden">
+    <div className="absolute inset-0 flex flex-col overflow-x-hidden max-w-[100vw]">
       
 
 
       {/* ── Horizontal Track ── */}
-      <div className="flex-1 relative flex items-center overflow-visible">
+      <div className="flex-1 relative flex items-center overflow-visible w-full max-w-[100vw]">
         <motion.div
-          className="flex items-center gap-[5vw] pl-[20vw] pr-[20vw] w-max h-full"
+          className="flex flex-col items-center gap-12 md:flex-row md:items-stretch md:justify-center md:gap-8 w-full md:w-max md:pl-[20vw] md:pr-[20vw]"
           style={{ x: trackX }}
         >
           {PROJECTS.map((project, index) => (

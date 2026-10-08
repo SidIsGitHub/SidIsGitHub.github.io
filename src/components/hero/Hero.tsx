@@ -101,9 +101,42 @@ export default function Hero({ rawCode }: HeroProps) {
       }, 150);
     };
 
+    // NEW MOBILE TOUCH PROTOCOL:
+    let lastTouchY = 0;
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      lastTouchY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const currentY = e.touches[0].clientY;
+      const deltaY = lastTouchY - currentY;
+      lastTouchY = currentY;
+      
+      let current = rotation.get();
+      let dynamicMultiplier = current < 100 ? 0.035 : 0.12; 
+      
+      let newRot = current + (deltaY * dynamicMultiplier * 2.5); // Multiplied for better touch feel
+      
+      if (newRot < -360) newRot = -360;
+      if (newRot > 370) newRot = 370; 
+      
+      rotation.set(newRot);
+
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        snapToNearestCheckpoint(rotation.get());
+      }, 150);
+    };
+
     window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    
     return () => {
       window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
       clearTimeout(scrollTimeout);
     };
   }, [rotation]);
@@ -165,12 +198,12 @@ export default function Hero({ rawCode }: HeroProps) {
   // Framer string interpolation trick for mixed units
   const cdHeight = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["calc(70vw + 0px)", "calc(70vw + 0px)", "calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)"]);
   const cdY = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["calc(55% + 0vh)", "calc(55% + 0vh)", "calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)"]); 
-  const cdClip = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 100px))", "inset(0px round calc(0% + 100px))"]);
+  const cdClip = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))"]);
 
   // Layer 3 Surface Materials
-  const cdBg = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)"]);
-  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)"]);
-  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(0px)", "blur(0px)"]);
+  const cdBg = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0.8)", "rgba(255,255,255,0.8)"]);
+  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.3)", "1px solid rgba(255,255,255,0.3)"]);
+  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)"]);
 
   // Internal Fades (CD fades out early, Bar UI fades in late)
   const cdBrutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360], [1, 1, 1, 0, 0, 0, 0]);
@@ -209,7 +242,7 @@ export default function Hero({ rawCode }: HeroProps) {
   return (
     <motion.main
       id="hero"
-      className="relative w-full h-dvh overflow-hidden bg-black"
+      className="relative w-full h-dvh overflow-x-hidden max-w-[100vw] overflow-y-hidden bg-black touch-pan-y"
       style={{ cursor: globalCursor }}
     >
       {/* Sticky container — keeps the visual viewport locked while scrolling drives physics */}
@@ -232,17 +265,17 @@ export default function Hero({ rawCode }: HeroProps) {
 
             {/* LAYER 1: BASELINE TYPOGRAPHY (TEMPORARY) */}
             <motion.div 
-              className="fixed inset-0 z-10 pointer-events-none flex items-center justify-center flex-col"
+              className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center flex-col"
               style={{ opacity: brutalistOpacity }}
             >
-              <h1 className="text-[15vw] font-black tracking-tighter text-[#E8E8E6] leading-none opacity-90">
+              <h1 className="text-[17vw] md:text-[15vw] font-black tracking-tighter text-[#E8E8E6] leading-none opacity-90 whitespace-nowrap">
                 SIDDHANT
               </h1>
             </motion.div>
 
             {/* LAYER 1.5: FOREGROUND PHYSICAL TEXTURE */}
             <motion.div 
-              className="fixed inset-0 z-20 pointer-events-none"
+              className="absolute inset-0 z-20 pointer-events-none"
               style={{ opacity: brutalistOpacity }}
             >
               <div 
@@ -255,9 +288,25 @@ export default function Hero({ rawCode }: HeroProps) {
 
         {/* LAYER 2: HIGH-DENSITY PREMIUM SHOWCASE */}
         <motion.div 
-          className="absolute inset-0 z-20 pointer-events-none bg-[#F5F5F7]"
-          style={{ opacity: cleanRoomOpacity }}
+          className="absolute inset-0 z-20 pointer-events-none overflow-x-hidden w-full max-w-[100vw]"
+          style={{ 
+            opacity: cleanRoomOpacity,
+            backgroundImage: 'radial-gradient(circle at 50% 0%, #ffffff 0%, #f5f5f7 60%, #e5e5ea 100%)' 
+          }}
         >
+          {/* VISION-OS AMBIENT LIGHTING (Place behind the project cards, z-index 0) */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <motion.div
+              animate={{ x: [0, 40, 0], y: [0, -30, 0], opacity: [0.4, 0.7, 0.4] }}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-[-10%] left-[15%] w-[45vw] h-[45vw] bg-white rounded-full blur-[120px]"
+            />
+            <motion.div
+              animate={{ x: [0, -50, 0], y: [0, 50, 0], opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              className="absolute bottom-[-10%] right-[10%] w-[55vw] h-[55vw] bg-gray-200 rounded-full blur-[140px]"
+            />
+          </div>
           {/* LAYER 2.8: THE PROJECT TIMELINE */}
           <motion.div 
             className="absolute inset-0 z-10 pointer-events-auto"
@@ -310,14 +359,14 @@ export default function Hero({ rawCode }: HeroProps) {
             transformOrigin: "top left"
           }}
         >
-          <h1 className="text-[15vw] font-black tracking-tighter text-[#1D1D1F] leading-none whitespace-nowrap mix-blend-exclusion">
+          <h1 className="text-[17vw] md:text-[15vw] font-black tracking-tighter text-[#1D1D1F] leading-none whitespace-nowrap mix-blend-exclusion">
             PROJECTS
           </h1>
         </motion.div>
 
         {/* LAYER 3: THE MORPHING SCRUBBER / PROGRESS BAR */}
         <motion.div 
-          className="absolute bottom-0 left-1/2 z-40 overflow-hidden flex items-center justify-center" 
+          className="absolute bottom-0 left-1/2 z-40 overflow-hidden flex items-center justify-center touch-none" 
           transition={{ type: "spring", mass: 2.5, damping: 35, stiffness: 80 }}
           style={{ 
             x: "-50%",
@@ -339,7 +388,12 @@ export default function Hero({ rawCode }: HeroProps) {
           }}
           onPan={(_, info) => {
             let current = rotation.get();
-            let drag = (info.delta.x - info.delta.y);
+            
+            // Detect mobile viewport for aggressive scaling
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+            const sensitivity = isMobile ? 3.5 : 1.5; 
+            
+            let drag = (info.delta.x - info.delta.y) * sensitivity;
             
             // DYNAMIC PAN FRICTION:
             // Heavy drag resistance during intro, lighter resistance during projects
@@ -369,39 +423,36 @@ export default function Hero({ rawCode }: HeroProps) {
              style={{ opacity: cdCleanOpacity, rotate: smoothRotation }} 
            />
 
-
+           {/* STATE 2: INNER DYNAMIC ISLAND OVERLAY */}
+           <motion.div 
+              className="absolute inset-0 w-full h-full flex items-center justify-center px-6 pointer-events-none overflow-hidden z-50 bg-[#2C2C2E] !rounded-full"
+              style={{ opacity: barUiOpacity }}
+           >
+              {/* Sleek Track Container */}
+              <div className="relative w-full h-[4px] bg-[#333333] !rounded-full">
+                
+                {/* Pure White Apple Fill */}
+                <motion.div 
+                  className="absolute top-0 left-0 h-full bg-white z-10 !rounded-full"
+                  style={{ width: progressFill }}
+                />
+                
+                {/* Perfectly Circular Checkpoint Nodes */}
+                <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full flex justify-between items-center z-20">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div 
+                      key={i} 
+                      className="w-4 h-4 aspect-square shrink-0 bg-[#2C2C2E] border-[2px] border-[#444] shadow-md flex items-center justify-center !rounded-full overflow-hidden"
+                    >
+                      {/* Active inner dot */}
+                      <div className="w-1 h-1 aspect-square shrink-0 bg-white/50 !rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+           </motion.div>
         </motion.div>
       </div>
-
-   {/* STATE 2: DYNAMIC ISLAND TIMELINE UI */}
-   <motion.div 
-      className="absolute bottom-12 left-1/2 -translate-x-1/2 w-[320px] h-[52px] bg-[#000000] shadow-[0_16px_32px_rgba(0,0,0,0.3)] border border-white/10 flex items-center justify-center px-6 pointer-events-none z-[9999]"
-      style={{ opacity: barUiOpacity, borderRadius: '999px' }}
-   >
-      {/* Track container */}
-      <div className="relative w-full h-[4px] bg-[#333333]" style={{ borderRadius: '999px' }}>
-        
-        {/* Pure White Apple Fill */}
-        <motion.div 
-          className="absolute top-0 left-0 h-full bg-white z-10"
-          style={{ width: progressFill, borderRadius: '999px' }}
-        />
-        
-        {/* Perfectly Circular Checkpoint Nodes */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full flex justify-between items-center z-20">
-          {[0, 1, 2, 3].map((i) => (
-            <div 
-              key={i} 
-              className="w-[18px] h-[18px] bg-black border-[3px] border-[#444444] shadow-sm flex items-center justify-center"
-              style={{ borderRadius: '50%' }}
-            >
-              {/* Optional inner dot for active state tracking */}
-              <div className="w-[4px] h-[4px] bg-white/30" style={{ borderRadius: '50%' }} />
-            </div>
-          ))}
-        </div>
-      </div>
-   </motion.div>
 
       {/* LAYER 999: UNIFIED PHYSICS FLASHBANG */}
       <motion.div 
