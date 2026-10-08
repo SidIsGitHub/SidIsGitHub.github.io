@@ -171,14 +171,12 @@ interface PremiumShowcaseProps {
 }
 
 export default function PremiumShowcase({ rotation }: PremiumShowcaseProps) {
-  // Explicit Track X translation mapping tied perfectly to card checkpoints
-  // Enforces the 20-degree buffer. Track does not move until 160°.
-  // Step size is exactly 65vw (60vw card + 5vw gap). 
-  // 0, -65, -130, -195
-  const trackX = useTransform(
+  // Explicit Track index mapping tied perfectly to card checkpoints
+  // We use an index so we can calculate viewport-relative CSS transforms
+  const trackIndex = useTransform(
     rotation, 
     [160, 230, 300, 370], 
-    ["0vw", "-65vw", "-130vw", "-195vw"] 
+    [0, -1, -2, -3] 
   );
 
   return (
@@ -187,10 +185,10 @@ export default function PremiumShowcase({ rotation }: PremiumShowcaseProps) {
 
 
       {/* ── Horizontal Track ── */}
-      <div className="flex-1 relative flex items-center overflow-visible w-full max-w-[100vw]">
+      <div className="flex-1 relative flex items-start md:items-center overflow-visible w-full max-w-[100vw]">
         <motion.div
-          className="flex flex-col items-center gap-12 md:flex-row md:items-stretch md:justify-center md:gap-8 w-full md:w-max md:pl-[20vw] md:pr-[20vw]"
-          style={{ x: trackX }}
+          className="flex flex-col md:flex-row items-center gap-[10vh] md:gap-[5vw] px-4 md:px-0 md:pl-[20vw] md:pr-[20vw] w-full md:w-max md:max-w-none pt-[15vh] md:pt-0 max-md:[transform:translateY(calc(var(--track-idx)*75vh))] md:[transform:translateX(calc(var(--track-idx)*65vw))]"
+          style={{ '--track-idx': trackIndex } as React.CSSProperties}
         >
           {PROJECTS.map((project, index) => (
             <ProjectCard
