@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import Hero from "@/components/hero/Hero";
+import SterileIdentity from "@/components/SterileIdentity";
 
 export default async function Home() {
   const filePath = path.join(process.cwd(), "src", "components", "hero", "Hero.tsx");
@@ -12,18 +13,15 @@ export default async function Home() {
   }
 
   return (
-    <main className="relative">
+    <main className="relative w-full flex flex-col bg-[#f5f5f7] overflow-x-hidden max-w-[100vw]">
+      {/* PHASE 1 & 2: The Void & The Projects Timeline */}
       <Hero rawCode={rawCode} />
-
-      {/* End spacer — provides scroll real estate for disc physics */}
-      <section className="relative h-screen bg-black flex items-center justify-center">
-        <div
-          className="font-[family-name:var(--font-code)] text-[clamp(2rem,8vw,6rem)] font-bold uppercase tracking-tighter text-center"
-          style={{ mixBlendMode: "difference", color: "#ffffff" }}
-        >
-          MORE COMING
-        </div>
-      </section>
+      
+      {/* PHASE 3: The Sterile Identity (Full Viewport Section) */}
+      <div className="relative z-50 w-full bg-[#f5f5f7]">
+        <SterileIdentity />
+      </div>
+      
     </main>
   );
 }

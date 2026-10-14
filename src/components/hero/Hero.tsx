@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useScroll, useTransform, useMotionValueEvent, useVelocity, useSpring, useMotionTemplate, motion, useMotionValue, MotionValue, animate } from "framer-motion";
 import CodeUnderworld from "./CodeUnderworld";
 import CursorMask from "./CursorMask";
@@ -32,6 +33,11 @@ interface HeroProps {
 
 export default function Hero({ rawCode }: HeroProps) {
   const [activeZone, setActiveZone] = useState("surface");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Scroll mapping logic
   const { scrollYProgress, scrollY } = useScroll();
@@ -77,8 +83,16 @@ export default function Hero({ rawCode }: HeroProps) {
     let scrollTimeout: NodeJS.Timeout;
 
     const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
       let current = rotation.get();
+      const isAtEndOfProjects = current >= 450;
+
+      // If the timeline is complete and the user is scrolling down, let the browser scroll naturally.
+      // Also allow native scrolling if the page is already scrolled vertically.
+      if ((isAtEndOfProjects && e.deltaY > 0) || window.scrollY > 0) {
+        return;
+      }
+
+      e.preventDefault();
       
       // DYNAMIC FRICTION CURVE:
       // If rotation < 100 (Initializer phase), use heavy friction (0.035) so it lasts longer.
@@ -89,7 +103,7 @@ export default function Hero({ rawCode }: HeroProps) {
 
       // Enforce the exact same clamps as the drag physics
       if (newRot < -360) newRot = -360;
-      if (newRot > 370) newRot = 370; 
+      if (newRot > 450) newRot = 450; 
 
       rotation.set(newRot);
 
@@ -119,7 +133,7 @@ export default function Hero({ rawCode }: HeroProps) {
       let newRot = current + (deltaY * dynamicMultiplier * 2.5); // Multiplied for better touch feel
       
       if (newRot < -360) newRot = -360;
-      if (newRot > 370) newRot = 370; 
+      if (newRot > 450) newRot = 450; 
       
       rotation.set(newRot);
 
@@ -144,22 +158,18 @@ export default function Hero({ rawCode }: HeroProps) {
   const newSmoothVelocity = useSpring(spinVelocity, { damping: 20, stiffness: 400 });
 
   // Flattened Scale (Text stays in place, only blurs/fades)
-  const textZScale = useTransform(smoothRotation, [0, 90], [1, 1]);
-  const textBlur = useTransform(smoothRotation, [-360, 0, 50, 90], ["blur(0px)", "blur(0px)", "blur(4px)", "blur(25px)"]);
-  const elementOpacity = useTransform(smoothRotation, [-360, 0, 70, 90], [1, 1, 0.8, 0]); 
+  const textZScale = useTransform(smoothRotation, [0, 90], [1, 1], { clamp: true });
+  const textBlur = useTransform(smoothRotation, [-360, 0, 50, 90, 450], ["blur(0px)", "blur(0px)", "blur(4px)", "blur(25px)", "blur(25px)"], { clamp: true });
+  const elementOpacity = useTransform(smoothRotation, [-360, 0, 70, 90, 450], [1, 1, 0.8, 0, 0], { clamp: true }); 
 
   // Kinetic Aberration Engine
-  const rgbShadow = useTransform(
-    newSmoothVelocity,
-    [-800, 0, 800],
-    [
+  const rgbShadow = useTransform(newSmoothVelocity, [-800, 0, 800], [
       "-8px 0px 0px rgba(212,17,17,0.8), 8px 0px 0px rgba(0,255,255,0.8)",
       "0px 0px 0px rgba(212,17,17,0), 0px 0px 0px rgba(0,255,255,0)",
       "8px 0px 0px rgba(212,17,17,0.8), -8px 0px 0px rgba(0,255,255,0.8)"
-    ]
-  );
-  const shear = useTransform(newSmoothVelocity, [-800, 0, 800], [-8, 0, 8]);
-  const jitter = useTransform(newSmoothVelocity, [-800, 0, 800], [-15, 0, 15]);
+    ], { clamp: true });
+  const shear = useTransform(newSmoothVelocity, [-800, 0, 800], [-8, 0, 8], { clamp: true });
+  const jitter = useTransform(newSmoothVelocity, [-800, 0, 800], [-15, 0, 15], { clamp: true });
   const inverseJitter = useTransform(jitter, (val) => val * -0.5);
 
   // We need the absolute magnitude of the combined velocity (scrolling or CD scratching) for the subliminal flashes
@@ -169,62 +179,63 @@ export default function Hero({ rawCode }: HeroProps) {
   );
 
   // 6. Tesseract Kinetic Spike (1x normal speed, 4x under heavy RPM)
-  const tesseractSpike = useTransform(smoothVelocity, [-800, 0, 800], [4, 1, 4]);
+  const tesseractSpike = useTransform(smoothVelocity, [-800, 0, 800], [4, 1, 4], { clamp: true });
 
   // Environment Opacities (Strict bounds prevent extrapolation rendering bugs)
-  const brutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 270], [1, 1, 1, 0, 0]);
-  const cleanRoomOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 270], [0, 0, 0, 1, 1]);
+  const brutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 270, 450], [1, 1, 1, 0, 0, 0], { clamp: true });
+  const cleanRoomOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 270, 450], [0, 0, 0, 1, 1, 1], { clamp: true });
 
   // 1. Initializer Morph (Wider Threshold: 95° to 105°)
   // Fades in at 89, but never fades out. It becomes the permanent header.
-  const initializerOpacity = useTransform(smoothRotation, [88.9, 90], [0, 1]);
+  const initializerOpacity = useTransform(smoothRotation, [88.9, 90], [0, 1], { clamp: true });
 
   // Evaporates early during the initial scroll
-  const microUiOpacity = useTransform(smoothRotation, [-360, 0, 80, 370], [1, 1, 0, 0]);
+  const microUiOpacity = useTransform(smoothRotation, [-360, 0, 80, 370, 450], [1, 1, 0, 0, 0], { clamp: true });
 
   // 1. Text Physics (Starts higher at 35vh, moves to top-left)
-  const initTop = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["35vh", "35vh", "35vh", "5vh", "5vh"]);
-  const initLeft = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["50vw", "50vw", "50vw", "4vw", "4vw"]);
-  const initX = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["-50%", "-50%", "-50%", "0%", "0%"]);
-  const initY = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["-50%", "-50%", "-50%", "0%", "0%"]);
-  const initScale = useTransform(smoothRotation, [-360, 0, 110, 140, 360], [1, 1, 1, 0.25, 0.25]);
+  const initTop = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["35vh", "35vh", "35vh", "5vh", "5vh", "5vh"], { clamp: true });
+  const initLeft = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["50vw", "50vw", "50vw", "4vw", "4vw", "4vw"], { clamp: true });
+  const initX = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["-50%", "-50%", "-50%", "0%", "0%", "0%"], { clamp: true });
+  const initY = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["-50%", "-50%", "-50%", "0%", "0%", "0%"], { clamp: true });
+  const initScale = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], [1, 1, 1, 0.25, 0.25, 0.25], { clamp: true });
 
   // Timeline Entrance (Fades in and slides up)
-  const timelineOpacity = useTransform(smoothRotation, [-360, 0, 110, 140, 360], [0, 0, 0, 1, 1]);
-  const timelineY = useTransform(smoothRotation, [-360, 0, 110, 140, 360], [100, 100, 100, 0, 0]); // 100px drop to 0px
+  const timelineEntranceOpacity = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 380, 450], [0, 0, 0, 1, 1, 0, 0], { clamp: true });
+  const timelineY = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], [100, 100, 100, 0, 0, 0], { clamp: true }); // 100px drop to 0px
 
-  // 2. Layer 3 Dimensions & Physics (Dynamic Island Morph)
-  const cdWidth = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["70vw", "70vw", "70vw", "40vw", "40vw"]);
+  // 2. Layer 3 Dimensions & Physics (Dynamic Island Morph → FaceID Morph)
+  const cdWidth = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["70vw", "70vw", "70vw", "40vw", "40vw", "140px"], { clamp: true });
   // Framer string interpolation trick for mixed units
-  const cdHeight = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["calc(70vw + 0px)", "calc(70vw + 0px)", "calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)"]);
-  const cdY = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["calc(55% + 0vh)", "calc(55% + 0vh)", "calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)"]); 
-  const cdClip = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))"]);
+  const cdHeight = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["calc(70vw + 0px)", "calc(70vw + 0px)", "calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)", "140px"], { clamp: true });
+  const cdY = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["calc(55% + 0vh)", "calc(55% + 0vh)", "calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)", "calc(0% - 4vh)"], { clamp: true }); 
+  const cdClip = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 36px))"], { clamp: true });
 
   // Layer 3 Surface Materials
-  const cdBg = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0.8)", "rgba(255,255,255,0.8)"]);
-  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 360], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.3)", "1px solid rgba(255,255,255,0.3)"]);
-  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 360], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)"]);
+  const timelineBg = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 450], ["transparent", "transparent", "transparent", "#1D1D1F", "#1D1D1F", "#000000"], { clamp: true });
+  const cdBg = timelineBg;
+  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 450], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(52,199,89,0.5)"], { clamp: true });
+  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)", "blur(0px)"], { clamp: true });
 
-  // Internal Fades (CD fades out early, Bar UI fades in late)
-  const cdBrutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360], [1, 1, 1, 0, 0, 0, 0]);
-  const cdCleanOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360], [0, 0, 0, 1, 1, 0, 0]);
-  const barUiOpacity = useTransform(smoothRotation, [-360, 0, 130, 140, 360], [0, 0, 0, 1, 1]);
+  // Internal Fades (CD fades out early, Bar UI fades in late, crossfades to FaceID)
+  const cdBrutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360, 450], [1, 1, 1, 0, 0, 0, 0, 0], { clamp: true });
+  const cdCleanOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360, 450], [0, 0, 0, 1, 1, 0, 0, 0], { clamp: true });
+  const innerTimelineOpacity = useTransform(smoothRotation, [-360, 0, 130, 140, 370, 410, 450], [0, 0, 0, 1, 1, 0, 0], { clamp: true });
+  const barUiOpacity = innerTimelineOpacity;
+
+  // FaceID Crossfade (timeline content fades out, FaceID SVG fades in)
+  const faceIdOpacity = useTransform(smoothRotation, [-360, 0, 370, 410, 450], [0, 0, 0, 0, 1], { clamp: true });
 
   // Timeline Progress Fill (Maps the exact checkpoints 160° -> 370°)
-  const progressFill = useTransform(
-    smoothRotation, 
-    [-360, 0, 160, 230, 300, 370], 
-    ["0%", "0%", "0%", "33.33%", "66.66%", "100%"]
-  );
+  const progressFill = useTransform(smoothRotation, [-360, 0, 160, 230, 300, 370, 450], ["0%", "0%", "0%", "33.33%", "66.66%", "100%", "100%"], { clamp: true });
   // Kinetic Flashbang (Spikes at 89, decays immediately by 89.5)
-  const flashbangOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 89.5, 180], [0, 0, 0, 1, 0, 0]);
+  const flashbangOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 89.5, 180, 450], [0, 0, 0, 1, 0, 0, 0], { clamp: true });
 
 
 
 
 
   // 4. Cursor State Override
-  const globalCursor = useTransform(smoothRotation, [-360, 0, 88.9, 89], ["none", "none", "none", "default"]);
+  const globalCursor = useTransform(smoothRotation, [-360, 0, 88.9, 89, 450], ["none", "none", "none", "default", "default"], { clamp: true });
 
 
   const [isDragging, setIsDragging] = useState(false);
@@ -240,13 +251,14 @@ export default function Hero({ rawCode }: HeroProps) {
   }
 
   return (
+    <>
     <motion.main
       id="hero"
       className="relative w-full h-dvh overflow-x-hidden max-w-[100vw] overflow-y-hidden bg-black touch-pan-y"
       style={{ cursor: globalCursor }}
     >
       {/* Sticky container — keeps the visual viewport locked while scrolling drives physics */}
-      <div className="sticky top-0 w-full h-dvh overflow-hidden">
+      <div className="sticky top-0 w-full h-screen overflow-hidden">
 
 
         {/* The Subliminal Engine - Passes the absolute magnitude of the scroll velocity */}
@@ -265,10 +277,10 @@ export default function Hero({ rawCode }: HeroProps) {
 
             {/* LAYER 1: BASELINE TYPOGRAPHY (TEMPORARY) */}
             <motion.div 
-              className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center flex-col"
+              className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center flex-col w-full h-full"
               style={{ opacity: brutalistOpacity }}
             >
-              <h1 className="text-[17vw] md:text-[15vw] font-black tracking-tighter text-[#E8E8E6] leading-none opacity-90 whitespace-nowrap">
+              <h1 className="text-[17vw] md:text-[15vw] font-black tracking-tighter text-[#E8E8E6] leading-none opacity-90 whitespace-nowrap text-center">
                 SIDDHANT
               </h1>
             </motion.div>
@@ -310,7 +322,7 @@ export default function Hero({ rawCode }: HeroProps) {
           {/* LAYER 2.8: THE PROJECT TIMELINE */}
           <motion.div 
             className="absolute inset-0 z-10 pointer-events-auto"
-            style={{ opacity: timelineOpacity, y: timelineY }}
+            style={{ opacity: timelineEntranceOpacity, y: timelineY }}
           >
             <PremiumShowcase rotation={smoothRotation} />
           </motion.div>
@@ -364,94 +376,6 @@ export default function Hero({ rawCode }: HeroProps) {
           </h1>
         </motion.div>
 
-        {/* LAYER 3: THE MORPHING SCRUBBER / PROGRESS BAR */}
-        <motion.div 
-          className="absolute bottom-0 left-1/2 z-40 overflow-hidden flex items-center justify-center touch-none" 
-          transition={{ type: "spring", mass: 2.5, damping: 35, stiffness: 80 }}
-          style={{ 
-            x: "-50%",
-            width: cdWidth,
-            height: cdHeight,
-            y: cdY, 
-            clipPath: cdClip,
-            WebkitClipPath: cdClip,
-            background: cdBg,
-            border: cdBorder,
-            backdropFilter: cdBackdrop,
-            WebkitBackdropFilter: cdBackdrop,
-            cursor: isDragging ? "grabbing" : "grab",
-          }} 
-          onPanStart={() => setIsDragging(true)}
-          onPanEnd={() => {
-            setIsDragging(false);
-            snapToNearestCheckpoint(rotation.get());
-          }}
-          onPan={(_, info) => {
-            let current = rotation.get();
-            
-            // Detect mobile viewport for aggressive scaling
-            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-            const sensitivity = isMobile ? 3.5 : 1.5; 
-            
-            let drag = (info.delta.x - info.delta.y) * sensitivity;
-            
-            // DYNAMIC PAN FRICTION:
-            // Heavy drag resistance during intro, lighter resistance during projects
-            let dynamicFriction = current < 100 ? 0.05 : 0.25; 
-            
-            let newRot = current + (drag * dynamicFriction); 
-            
-            if (newRot < -360) newRot = -360; 
-            if (newRot > 370) newRot = 370; 
-            
-            rotation.set(newRot); 
-          }}
-          onMouseEnter={() => { setActiveZone("cd"); setIsHoveringCD(true); }}
-          onMouseLeave={() => setIsHoveringCD(false)}
-        >
-           {/* STATE 0: BRUTALIST CD (Fades out during morph) */}
-           <motion.img 
-             src="/yeezus-cd.webp" 
-             className="absolute inset-0 w-full h-full object-cover pointer-events-none" 
-             style={{ opacity: cdBrutalistOpacity, rotate: smoothRotation }} 
-           />
-           
-           {/* STATE 1: CLEAN CD (Fades out during morph) */}
-           <motion.img 
-             src="/yeezus-disc-clean.webp" 
-             className="absolute inset-0 w-full h-full object-cover pointer-events-none drop-shadow-2xl" 
-             style={{ opacity: cdCleanOpacity, rotate: smoothRotation }} 
-           />
-
-           {/* STATE 2: INNER DYNAMIC ISLAND OVERLAY */}
-           <motion.div 
-              className="absolute inset-0 w-full h-full flex items-center justify-center px-6 pointer-events-none overflow-hidden z-50 bg-[#2C2C2E] !rounded-full"
-              style={{ opacity: barUiOpacity }}
-           >
-              {/* Sleek Track Container */}
-              <div className="relative w-full h-[4px] bg-[#333333] !rounded-full">
-                
-                {/* Pure White Apple Fill */}
-                <motion.div 
-                  className="absolute top-0 left-0 h-full bg-white z-10 !rounded-full"
-                  style={{ width: progressFill }}
-                />
-                
-                {/* Perfectly Circular Checkpoint Nodes */}
-                <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full flex justify-between items-center z-20">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div 
-                      key={i} 
-                      className="w-4 h-4 aspect-square shrink-0 bg-[#2C2C2E] border-[2px] border-[#444] shadow-md flex items-center justify-center !rounded-full overflow-hidden"
-                    >
-                      {/* Active inner dot */}
-                      <div className="w-1 h-1 aspect-square shrink-0 bg-white/50 !rounded-full" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-           </motion.div>
-        </motion.div>
       </div>
 
       {/* LAYER 999: UNIFIED PHYSICS FLASHBANG */}
@@ -460,5 +384,101 @@ export default function Hero({ rawCode }: HeroProps) {
         style={{ opacity: flashbangOpacity }}
       />
     </motion.main>  
+
+    {/* PORTAL TO ESCAPE SMOOTH SCROLL TRANSFORM */}
+    {isMounted && typeof document !== "undefined" && createPortal(
+      <motion.div 
+        className="fixed bottom-0 left-1/2 z-[9999] overflow-hidden flex items-center justify-center touch-none" 
+        transition={{ type: "spring", mass: 2.5, damping: 35, stiffness: 80 }}
+        style={{ 
+          x: "-50%",
+          width: cdWidth,
+          height: cdHeight,
+          y: cdY, 
+          clipPath: cdClip,
+          WebkitClipPath: cdClip,
+          background: cdBg,
+          border: cdBorder,
+          backdropFilter: cdBackdrop,
+          WebkitBackdropFilter: cdBackdrop,
+          cursor: isDragging ? "grabbing" : "grab",
+        }} 
+        onPanStart={() => setIsDragging(true)}
+        onPanEnd={() => {
+          setIsDragging(false);
+          snapToNearestCheckpoint(rotation.get());
+        }}
+        onPan={(_, info) => {
+          let current = rotation.get();
+          
+          // Detect mobile viewport for aggressive scaling
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+          const sensitivity = isMobile ? 3.5 : 1.5; 
+          
+          let drag = (info.delta.x - info.delta.y) * sensitivity;
+          
+          // DYNAMIC PAN FRICTION:
+          // Heavy drag resistance during intro, lighter resistance during projects
+          let dynamicFriction = current < 100 ? 0.05 : 0.25; 
+          
+          let newRot = current + (drag * dynamicFriction); 
+          
+          if (newRot < -360) newRot = -360; 
+          if (newRot > 450) newRot = 450; 
+          
+          rotation.set(newRot); 
+        }}
+        onMouseEnter={() => { setActiveZone("cd"); setIsHoveringCD(true); }}
+        onMouseLeave={() => setIsHoveringCD(false)}
+      >
+         {/* STATE 0: BRUTALIST CD (Fades out during morph) */}
+         <motion.img 
+           src="/yeezus-cd.webp" 
+           className="absolute inset-0 w-full h-full object-cover pointer-events-none" 
+           style={{ opacity: cdBrutalistOpacity, rotate: smoothRotation }} 
+         />
+         
+         {/* STATE 1: CLEAN CD (Fades out during morph) */}
+         <motion.img 
+           src="/yeezus-disc-clean.webp" 
+           className="absolute inset-0 w-full h-full object-cover pointer-events-none drop-shadow-2xl" 
+           style={{ opacity: cdCleanOpacity, rotate: smoothRotation }} 
+         />
+
+         {/* STATE 2: INNER DYNAMIC ISLAND OVERLAY (Timeline UI) */}
+         <motion.div style={{ opacity: innerTimelineOpacity }} className="relative w-full h-full flex items-center justify-center">
+            {/* FORCE THE TRACK AND DOTS TO BE WHITE */}
+            <div className="w-[80%] h-[2px] bg-white/20 relative flex items-center justify-between">
+              {/* Active Progress Line */}
+              <motion.div className="h-full bg-white absolute left-0 top-0" style={{ width: progressFill }} />
+              
+              {/* Dots - Make sure they use bg-white or bg-white/50 */}
+              <div className="w-2 h-2 rounded-full bg-white relative z-10" />
+              <div className="w-2 h-2 rounded-full bg-white/50 relative z-10" />
+              <div className="w-2 h-2 rounded-full bg-white/50 relative z-10" />
+              <div className="w-2 h-2 rounded-full bg-white/50 relative z-10" />
+            </div>
+         </motion.div>
+
+         {/* STATE 3: FACE-ID GLYPH (Crossfades in during final morph) */}
+         <motion.div 
+            style={{ opacity: faceIdOpacity }} 
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-[60]"
+         >
+            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 3h-2a2 2 0 0 0 -2 2v2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M3 17v2a2 2 0 0 0 2 2h2" />
+              <path d="M17 21h2a2 2 0 0 0 2 -2v-2" />
+              <path d="M9 10h.01" />
+              <path d="M15 10h.01" />
+              <path d="M9 15c1 1 5 1 6 0" />
+              <path d="M12 10v2" />
+            </svg>
+         </motion.div>
+      </motion.div>,
+      document.body
+    )}
+  </>
   );
 }

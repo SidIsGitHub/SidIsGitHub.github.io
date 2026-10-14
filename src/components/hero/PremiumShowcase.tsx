@@ -72,13 +72,13 @@ function ProjectCard({
   const sweetSpot = 160 + index * 70;
 
   // Visual interpolations based on distance from sweet spot
-  const cardScale = useTransform(rotation, [sweetSpot - 70, sweetSpot, sweetSpot + 70], [0.85, 1, 0.85]);
-  const cardOpacity = useTransform(rotation, [sweetSpot - 70, sweetSpot, sweetSpot + 70], [0.3, 1, 0.3]);
-  const cardBlur = useTransform(rotation, [sweetSpot - 70, sweetSpot, sweetSpot + 70], [8, 0, 8]);
+  const cardScale = useTransform(rotation, [sweetSpot - 70, sweetSpot, sweetSpot + 70], [0.85, 1, 0.85], { clamp: true });
+  const cardOpacity = useTransform(rotation, [sweetSpot - 70, sweetSpot, sweetSpot + 70], [0.3, 1, 0.3], { clamp: true });
+  const cardBlur = useTransform(rotation, [sweetSpot - 70, sweetSpot, sweetSpot + 70], [8, 0, 8], { clamp: true });
   const cardFilter = useTransform(cardBlur, (b) => `blur(${b}px)`);
 
   // Internal image parallax — shifts the image opposite to scroll direction
-  const imageX = useTransform(rotation, [sweetSpot - 60, sweetSpot + 60], [20, -20]);
+  const imageX = useTransform(rotation, [sweetSpot - 60, sweetSpot + 60], [20, -20], { clamp: true });
 
   return (
     <motion.div
@@ -173,11 +173,7 @@ interface PremiumShowcaseProps {
 export default function PremiumShowcase({ rotation }: PremiumShowcaseProps) {
   // Explicit Track index mapping tied perfectly to card checkpoints
   // We use an index so we can calculate viewport-relative CSS transforms
-  const trackIndex = useTransform(
-    rotation, 
-    [160, 230, 300, 370], 
-    [0, -1, -2, -3] 
-  );
+  const trackIndex = useTransform(rotation, [160, 230, 300, 370], [0, -1, -2, -3], { clamp: true });
 
   return (
     <div className="absolute inset-0 flex flex-col overflow-x-hidden max-w-[100vw]">
