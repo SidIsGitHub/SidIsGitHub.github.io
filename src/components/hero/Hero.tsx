@@ -202,34 +202,40 @@ export default function Hero({ rawCode }: HeroProps) {
 
   // Timeline Entrance (Fades in and slides up)
   const timelineEntranceOpacity = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 380, 450], [0, 0, 0, 1, 1, 0, 0], { clamp: true });
-  const timelineY = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], [100, 100, 100, 0, 0, 0], { clamp: true }); // 100px drop to 0px
+  const showcaseDropY = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], [100, 100, 100, 0, 0, 0], { clamp: true }); // 100px drop to 0px
 
-  // 2. Layer 3 Dimensions & Physics (Dynamic Island Morph → FaceID Morph)
-  const cdWidth = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["70vw", "70vw", "70vw", "40vw", "40vw", "140px"], { clamp: true });
-  // Framer string interpolation trick for mixed units
-  const cdHeight = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["calc(70vw + 0px)", "calc(70vw + 0px)", "calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)", "140px"], { clamp: true });
-  const cdY = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["calc(55% + 0vh)", "calc(55% + 0vh)", "calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)", "calc(0% - 4vh)"], { clamp: true }); 
-  const cdClip = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 36px))"], { clamp: true });
+  // 2. Layer 3 Dimensions & Physics (Dynamic Island Morph → Pill Morph → FaceID Morph)
+  // Phase 1 (0-140): Disc -> Timeline
+  // Phase 2 (140-370): Holds Timeline shape
+  // Phase 3 (370-410): Shrinks to Pill & Flies to top of viewport
+  // Phase 4 (410-450): Expands to FaceID Square at top of viewport
+  const timelineWidth = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["70vw", "70vw", "70vw", "40vw", "40vw", "160px", "140px"], { clamp: true });
+  const cdWidth = timelineWidth;
+
+  const timelineHeight = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["calc(70vw + 0px)", "calc(70vw + 0px)", "calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)", "36px", "140px"], { clamp: true });
+  const cdHeight = timelineHeight;
+
+  // The Y-Axis Flight Path (Commands the fixed element to fly up to the top of the monitor during the Pill morph, and hold that position for FaceID)
+  const timelineY = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["calc(55% + 0vh)", "calc(55% + 0vh)", "calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)", "-85vh", "-85vh"], { clamp: true });
+  const cdY = timelineY;
+
+  const timelineRadius = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 36px))", "inset(0px round calc(0% + 36px))"], { clamp: true });
+  const cdClip = timelineRadius;
 
   // Layer 3 Surface Materials
-  const timelineBg = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 450], ["transparent", "transparent", "transparent", "#1D1D1F", "#1D1D1F", "#000000"], { clamp: true });
+  const timelineBg = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 410, 450], ["transparent", "transparent", "transparent", "#1D1D1F", "#1D1D1F", "#000000", "#000000"], { clamp: true });
   const cdBg = timelineBg;
-  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 450], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(52,199,89,0.5)"], { clamp: true });
-  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 450], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)", "blur(0px)"], { clamp: true });
+  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 410, 450], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.3)", "1px solid rgba(52,199,89,0.5)"], { clamp: true });
+  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)", "blur(12px)", "blur(0px)"], { clamp: true });
 
   // Internal Fades (CD fades out early, Bar UI fades in late, crossfades to FaceID)
   const cdBrutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360, 450], [1, 1, 1, 0, 0, 0, 0, 0], { clamp: true });
   const cdCleanOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360, 450], [0, 0, 0, 1, 1, 0, 0, 0], { clamp: true });
-  const innerTimelineOpacity = useTransform(smoothRotation, [-360, 0, 130, 140, 370, 410, 450], [0, 0, 0, 1, 1, 0, 0], { clamp: true });
+  const innerTimelineOpacity = useTransform(smoothRotation, [-360, 0, 130, 140, 370, 395, 410], [0, 0, 0, 1, 1, 0, 0], { clamp: true });
   const barUiOpacity = innerTimelineOpacity;
 
-  // FaceID Crossfade (timeline content fades out, FaceID SVG fades in)
-  const faceIdOpacity = useTransform(smoothRotation, [-360, 0, 370, 410, 450], [0, 0, 0, 0, 1], { clamp: true });
-
-  // Timeline aliases for clarity
-  const timelineWidth = cdWidth;
-  const timelineHeight = cdHeight;
-  const timelineRadius = cdClip;
+  // FaceID Crossfade (happens during the Pill -> FaceID transition)
+  const faceIdOpacity = useTransform(smoothRotation, [-360, 0, 410, 430, 450], [0, 0, 0, 0, 1], { clamp: true });
 
   // Timeline Progress Fill (Maps the exact checkpoints 160° -> 370°)
   const progressFill = useTransform(smoothRotation, [-360, 0, 160, 230, 300, 370, 450], ["0%", "0%", "0%", "33.33%", "66.66%", "100%", "100%"], { clamp: true });
@@ -329,7 +335,7 @@ export default function Hero({ rawCode }: HeroProps) {
           {/* LAYER 2.8: THE PROJECT TIMELINE */}
           <motion.div 
             className="absolute inset-0 z-10 pointer-events-auto"
-            style={{ opacity: timelineEntranceOpacity, y: timelineY }}
+            style={{ opacity: timelineEntranceOpacity, y: showcaseDropY }}
           >
             <PremiumShowcase rotation={smoothRotation} />
           </motion.div>
@@ -395,16 +401,16 @@ export default function Hero({ rawCode }: HeroProps) {
     {/* PORTAL TO ESCAPE SMOOTH SCROLL TRANSFORM */}
     {isMounted && typeof document !== "undefined" && createPortal(
       <motion.div 
-        className="fixed bottom-0 left-1/2 z-[9999] overflow-hidden flex items-center justify-center touch-none" 
+        className="fixed bottom-0 left-1/2 z-[9999] overflow-hidden flex items-center justify-center touch-none shadow-2xl" 
         transition={{ type: "spring", mass: 2.5, damping: 35, stiffness: 80 }}
         style={{ 
           x: "-50%",
-          width: cdWidth,
-          height: cdHeight,
-          y: cdY, 
-          clipPath: cdClip,
-          WebkitClipPath: cdClip,
-          background: cdBg,
+          width: timelineWidth,
+          height: timelineHeight,
+          y: timelineY, // <-- THIS COMMANDS THE FLIGHT
+          clipPath: timelineRadius,
+          WebkitClipPath: timelineRadius,
+          background: timelineBg,
           border: cdBorder,
           backdropFilter: cdBackdrop,
           WebkitBackdropFilter: cdBackdrop,
