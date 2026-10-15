@@ -40,7 +40,8 @@ export default function Hero({ rawCode }: HeroProps) {
   }, []);
 
   // Scroll mapping logic
-  const { scrollYProgress, scrollY } = useScroll();
+  const containerRef = useRef<HTMLElement>(null);
+  const { scrollYProgress, scrollY } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
   const scrollVelocity = useVelocity(scrollY);
   const smoothVelocity = useSpring(scrollVelocity, { damping: 50, stiffness: 400 });
 
@@ -225,6 +226,11 @@ export default function Hero({ rawCode }: HeroProps) {
   // FaceID Crossfade (timeline content fades out, FaceID SVG fades in)
   const faceIdOpacity = useTransform(smoothRotation, [-360, 0, 370, 410, 450], [0, 0, 0, 0, 1], { clamp: true });
 
+  // Timeline aliases for clarity
+  const timelineWidth = cdWidth;
+  const timelineHeight = cdHeight;
+  const timelineRadius = cdClip;
+
   // Timeline Progress Fill (Maps the exact checkpoints 160° -> 370°)
   const progressFill = useTransform(smoothRotation, [-360, 0, 160, 230, 300, 370, 450], ["0%", "0%", "0%", "33.33%", "66.66%", "100%", "100%"], { clamp: true });
   // Kinetic Flashbang (Spikes at 89, decays immediately by 89.5)
@@ -253,6 +259,7 @@ export default function Hero({ rawCode }: HeroProps) {
   return (
     <>
     <motion.main
+      ref={containerRef}
       id="hero"
       className="relative w-full h-dvh overflow-x-hidden max-w-[100vw] overflow-y-hidden bg-black touch-pan-y"
       style={{ cursor: globalCursor }}
