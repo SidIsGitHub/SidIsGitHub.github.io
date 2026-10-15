@@ -409,17 +409,17 @@ export default function Hero({ rawCode }: HeroProps) {
           snapToNearestCheckpoint(rotation.get());
         }}
         onPan={(_, info) => {
-          let current = rotation.get();
+          const current = rotation.get();
           
           // Detect mobile viewport for aggressive scaling
           const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
           const sensitivity = isMobile ? 3.5 : 1.5; 
           
-          let drag = (info.delta.x - info.delta.y) * sensitivity;
+          const drag = (info.delta.x - info.delta.y) * sensitivity;
           
           // DYNAMIC PAN FRICTION:
           // Heavy drag resistance during intro, lighter resistance during projects
-          let dynamicFriction = current < 100 ? 0.05 : 0.25; 
+          const dynamicFriction = current < 100 ? 0.05 : 0.25; 
           
           let newRot = current + (drag * dynamicFriction); 
           
