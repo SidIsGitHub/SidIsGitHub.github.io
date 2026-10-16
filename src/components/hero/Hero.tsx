@@ -63,6 +63,31 @@ export default function Hero({ rawCode }: HeroProps) {
   const rotation = useMotionValue(0);
   const smoothRotation = useSpring(rotation, { damping: 40, stiffness: 300 });
 
+  // Unified progress value: tracks rotary progress [0..0.95] during projects, then scroll progress [0.95..1.0] as the page unpins
+  const unifiedProgress = useMotionValue(0);
+
+  useMotionValueEvent(smoothRotation, "change", (rot) => {
+    if (typeof window !== "undefined" && window.scrollY > 0) return;
+    if (rot <= 0) {
+      unifiedProgress.set(0);
+    } else if (rot <= 140) {
+      unifiedProgress.set((rot / 140) * 0.2);
+    } else if (rot <= 370) {
+      unifiedProgress.set(0.2 + ((rot - 140) / (370 - 140)) * (0.95 - 0.2));
+    } else {
+      unifiedProgress.set(0.95);
+    }
+  });
+
+  useMotionValueEvent(scrollYProgress, "change", (sp) => {
+    if (sp > 0) {
+      unifiedProgress.set(Math.min(0.95 + sp * 0.05, 1));
+    }
+  });
+
+  // Intercepts the raw scroll data and applies heavy, buttery physics (No bounce, slow ease out)
+  const smoothProgress = useSpring(unifiedProgress, { damping: 26, stiffness: 150, mass: 1.2 });
+
   const snapToNearestCheckpoint = (currentVal: number) => {
     const checkpoints = [160, 230, 300, 370];
     const closest = checkpoints.reduce((prev, curr) => 
@@ -85,7 +110,7 @@ export default function Hero({ rawCode }: HeroProps) {
 
     const handleWheel = (e: WheelEvent) => {
       let current = rotation.get();
-      const isAtEndOfProjects = current >= 450;
+      const isAtEndOfProjects = current >= 370;
 
       // If the timeline is complete and the user is scrolling down, let the browser scroll naturally.
       // Also allow native scrolling if the page is already scrolled vertically.
@@ -104,7 +129,7 @@ export default function Hero({ rawCode }: HeroProps) {
 
       // Enforce the exact same clamps as the drag physics
       if (newRot < -360) newRot = -360;
-      if (newRot > 450) newRot = 450; 
+      if (newRot > 370) newRot = 370; 
 
       rotation.set(newRot);
 
@@ -134,7 +159,7 @@ export default function Hero({ rawCode }: HeroProps) {
       let newRot = current + (deltaY * dynamicMultiplier * 2.5); // Multiplied for better touch feel
       
       if (newRot < -360) newRot = -360;
-      if (newRot > 450) newRot = 450; 
+      if (newRot > 370) newRot = 370; 
       
       rotation.set(newRot);
 
@@ -205,40 +230,38 @@ export default function Hero({ rawCode }: HeroProps) {
   const showcaseDropY = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], [100, 100, 100, 0, 0, 0], { clamp: true }); // 100px drop to 0px
 
   // 2. Layer 3 Dimensions & Physics (Dynamic Island Morph → Pill Morph → FaceID Morph)
-  // Phase 1 (0-140): Disc -> Timeline
-  // Phase 2 (140-370): Holds Timeline shape
-  // Phase 3 (370-410): Shrinks to Pill & Flies to top of viewport
-  // Phase 4 (410-450): Expands to FaceID Square at top of viewport
-  const timelineWidth = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["70vw", "70vw", "70vw", "40vw", "40vw", "160px", "140px"], { clamp: true });
+  // Flight Path arrays: [0, 0.2, 0.95, 0.98, 1]
+  // The timeline holds its shape until 0.95 (projects finish). Then rapidly morphs as the page unpins. The `useSpring` will smooth this rapid jump into a gorgeous, slow curve.
+  const timelineWidth = useTransform(smoothProgress, [0, 0.2, 0.95, 0.98, 1], ["70vw", "40vw", "40vw", "160px", "140px"]);
   const cdWidth = timelineWidth;
 
-  const timelineHeight = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["calc(70vw + 0px)", "calc(70vw + 0px)", "calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)", "36px", "140px"], { clamp: true });
+  const timelineHeight = useTransform(smoothProgress, [0, 0.2, 0.95, 0.98, 1], ["calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)", "36px", "140px"]);
   const cdHeight = timelineHeight;
 
   // The Y-Axis Flight Path (Commands the fixed element to fly up to the top of the monitor during the Pill morph, and hold that position for FaceID)
-  const timelineY = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["calc(55% + 0vh)", "calc(55% + 0vh)", "calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)", "-85vh", "-85vh"], { clamp: true });
+  const timelineY = useTransform(smoothProgress, [0, 0.2, 0.95, 0.98, 1], ["calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)", "-85vh", "-85vh"]);
   const cdY = timelineY;
 
-  const timelineRadius = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 36px))", "inset(0px round calc(0% + 36px))"], { clamp: true });
+  const timelineRadius = useTransform(smoothProgress, [0, 0.2, 0.95, 0.98, 1], ["inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 36px))", "inset(0px round calc(0% + 36px))"]);
   const cdClip = timelineRadius;
 
   // Layer 3 Surface Materials
-  const timelineBg = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 410, 450], ["transparent", "transparent", "transparent", "#1D1D1F", "#1D1D1F", "#000000", "#000000"], { clamp: true });
+  const timelineBg = useTransform(smoothProgress, [0, 0.2, 0.95, 0.98, 1], ["transparent", "#1D1D1F", "#1D1D1F", "#000000", "#000000"]);
   const cdBg = timelineBg;
-  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 410, 450], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.3)", "1px solid rgba(52,199,89,0.5)"], { clamp: true });
-  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 410, 450], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)", "blur(12px)", "blur(0px)"], { clamp: true });
+  const cdBorder = useTransform(smoothProgress, [0, 0.2, 0.95, 0.98, 1], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.3)", "1px solid rgba(52,199,89,0.5)"]);
+  const cdBackdrop = useTransform(smoothProgress, [0, 0.2, 0.95, 0.98, 1], ["blur(0px)", "blur(12px)", "blur(12px)", "blur(12px)", "blur(0px)"]);
 
   // Internal Fades (CD fades out early, Bar UI fades in late, crossfades to FaceID)
-  const cdBrutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360, 450], [1, 1, 1, 0, 0, 0, 0, 0], { clamp: true });
-  const cdCleanOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360, 450], [0, 0, 0, 1, 1, 0, 0, 0], { clamp: true });
-  const innerTimelineOpacity = useTransform(smoothRotation, [-360, 0, 130, 140, 370, 395, 410], [0, 0, 0, 1, 1, 0, 0], { clamp: true });
+  const cdBrutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 370], [1, 1, 1, 0, 0, 0, 0], { clamp: true });
+  const cdCleanOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 370], [0, 0, 0, 1, 1, 0, 0], { clamp: true });
+  const innerTimelineOpacity = useTransform(smoothProgress, [0.95, 0.98], [1, 0]);
   const barUiOpacity = innerTimelineOpacity;
 
   // FaceID Crossfade (happens during the Pill -> FaceID transition)
-  const faceIdOpacity = useTransform(smoothRotation, [-360, 0, 410, 430, 450], [0, 0, 0, 0, 1], { clamp: true });
+  const faceIdOpacity = useTransform(smoothProgress, [0.98, 1], [0, 1]);
 
   // Timeline Progress Fill (Maps the exact checkpoints 160° -> 370°)
-  const progressFill = useTransform(smoothRotation, [-360, 0, 160, 230, 300, 370, 450], ["0%", "0%", "0%", "33.33%", "66.66%", "100%", "100%"], { clamp: true });
+  const progressFill = useTransform(smoothRotation, [-360, 0, 160, 230, 300, 370], ["0%", "0%", "0%", "33.33%", "66.66%", "100%"], { clamp: true });
   // Kinetic Flashbang (Spikes at 89, decays immediately by 89.5)
   const flashbangOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 89.5, 180, 450], [0, 0, 0, 1, 0, 0, 0], { clamp: true });
 
@@ -437,7 +460,7 @@ export default function Hero({ rawCode }: HeroProps) {
           let newRot = current + (drag * dynamicFriction); 
           
           if (newRot < -360) newRot = -360; 
-          if (newRot > 450) newRot = 450; 
+          if (newRot > 370) newRot = 370; 
           
           rotation.set(newRot); 
         }}
