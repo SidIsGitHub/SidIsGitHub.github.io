@@ -41,7 +41,10 @@ export default function Hero({ rawCode }: HeroProps) {
 
   // Scroll mapping logic
   const containerRef = useRef<HTMLElement>(null);
-  const { scrollYProgress, scrollY } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
+  const { scrollYProgress, scrollY } = useScroll({
+    target: isMounted ? containerRef : undefined,
+    offset: ["start start", "end start"] // Now tracks the 100vh unpin phase
+  });
   const scrollVelocity = useVelocity(scrollY);
   const smoothVelocity = useSpring(scrollVelocity, { damping: 50, stiffness: 400 });
 
@@ -204,40 +207,40 @@ export default function Hero({ rawCode }: HeroProps) {
   const timelineEntranceOpacity = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 380, 450], [0, 0, 0, 1, 1, 0, 0], { clamp: true });
   const showcaseDropY = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], [100, 100, 100, 0, 0, 0], { clamp: true }); // 100px drop to 0px
 
-  // 2. Layer 3 Dimensions & Physics (HIG Apple Ease-Out Simulation)
-  // Phase 1 (0.0 - 0.2 / 0 - 140): Disc -> Timeline
-  // Phase 2 (0.2 - 0.8 / 140 - 370): Horizontal Scroll (Timeline stays 40vw / 600px at bottom)
-  // Phase 3 (0.8 - 0.95 / 370 - 430): Eased Flight Path (Fast lift-off, slow landing into 160px Pill)
-  // Phase 4 (0.95 - 1.0 / 430 - 450): FaceID Square Expansion
+  // 2. Layer 3 Dimensions & Physics (0.75 Scaled Flight Path & FaceID Morph)
+  // Phase 1 (0.0 - 0.15 / 0 - 140): Disc -> Timeline
+  // Phase 2 (0.15 - 0.75 / 140 - 370): Horizontal Projects Scroll (Timeline holds at 40vw / 600px)
+  // Phase 3 (0.75 - 0.90 / 370 - 418): Unpin begins. Fast lift-off into the 160px Pill.
+  // Phase 4 (0.90 - 1.0 / 418 - 450): Slow ease-out landing at top, expands into FaceID Square.
   const timelineWidth = useTransform(
     smoothRotation, 
-    [-360, 0, 110, 140, 370, 390, 410, 430, 450], 
-    ["70vw", "70vw", "70vw", "40vw", "40vw", "300px", "190px", "160px", "140px"], 
+    [-360, 0, 110, 140, 370, 392, 418, 450], 
+    ["70vw", "70vw", "70vw", "40vw", "40vw", "300px", "160px", "140px"], 
     { clamp: true }
   );
   const cdWidth = timelineWidth;
 
   const timelineHeight = useTransform(
     smoothRotation, 
-    [-360, 0, 110, 140, 370, 390, 410, 430, 450], 
-    ["calc(70vw + 0px)", "calc(70vw + 0px)", "calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)", "calc(0vw + 64px)", "48px", "36px", "140px"], 
+    [-360, 0, 110, 140, 370, 392, 418, 450], 
+    ["calc(70vw + 0px)", "calc(70vw + 0px)", "calc(70vw + 0px)", "calc(0vw + 64px)", "calc(0vw + 64px)", "24px", "36px", "140px"], 
     { clamp: true }
   );
   const cdHeight = timelineHeight;
 
-  // Y-Axis Flight Path (Simulated Bezier curve: jumps 45vh quickly, then decelerates into -85vh)
+  // The Y-Axis Flight: Starts exactly at 0.75 (370), gliding up the screen as the background page slides up.
   const timelineY = useTransform(
     smoothRotation, 
-    [-360, 0, 110, 140, 370, 390, 410, 430, 450], 
-    ["calc(55% + 0vh)", "calc(55% + 0vh)", "calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)", "-45vh", "-72vh", "-85vh", "-85vh"], 
+    [-360, 0, 110, 140, 370, 392, 418, 450], 
+    ["calc(55% + 0vh)", "calc(55% + 0vh)", "calc(55% + 0vh)", "calc(0% - 4vh)", "calc(0% - 4vh)", "-45vh", "-85vh", "-85vh"], 
     { clamp: true }
   );
   const cdY = timelineY;
 
   const timelineRadius = useTransform(
     smoothRotation, 
-    [-360, 0, 110, 140, 370, 390, 410, 430, 450], 
-    ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 99px))", "inset(0px round calc(0% + 36px))", "inset(0px round calc(0% + 36px))"], 
+    [-360, 0, 110, 140, 370, 392, 418, 450], 
+    ["inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(50% + 0px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 999px))", "inset(0px round calc(0% + 99px))", "inset(0px round calc(0% + 36px))", "inset(0px round calc(0% + 36px))"], 
     { clamp: true }
   );
   const cdClip = timelineRadius;
@@ -245,22 +248,22 @@ export default function Hero({ rawCode }: HeroProps) {
   // Layer 3 Surface Materials
   const timelineBg = useTransform(
     smoothRotation, 
-    [-360, 0, 105, 110, 370, 390, 410, 430, 450], 
-    ["transparent", "transparent", "transparent", "#1D1D1F", "#1D1D1F", "#1D1D1F", "#1D1D1F", "#000000", "#000000"], 
+    [-360, 0, 105, 110, 370, 392, 418, 450], 
+    ["transparent", "transparent", "transparent", "#1D1D1F", "#1D1D1F", "#1D1D1F", "#000000", "#000000"], 
     { clamp: true }
   );
   const cdBg = timelineBg;
-  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 430, 450], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.3)", "1px solid rgba(52,199,89,0.5)"], { clamp: true });
-  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 430, 450], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)", "blur(12px)", "blur(0px)"], { clamp: true });
+  const cdBorder = useTransform(smoothRotation, [-360, 0, 105, 110, 370, 418, 450], ["1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.15)", "1px solid rgba(255,255,255,0.3)", "1px solid rgba(52,199,89,0.5)"], { clamp: true });
+  const cdBackdrop = useTransform(smoothRotation, [-360, 0, 110, 140, 370, 418, 450], ["blur(0px)", "blur(0px)", "blur(0px)", "blur(12px)", "blur(12px)", "blur(12px)", "blur(0px)"], { clamp: true });
 
   // Internal Fades (CD fades out early, Bar UI fades in late, crossfades to FaceID)
   const cdBrutalistOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360, 450], [1, 1, 1, 0, 0, 0, 0, 0], { clamp: true });
   const cdCleanOpacity = useTransform(smoothRotation, [-360, 0, 88.9, 89, 105, 110, 360, 450], [0, 0, 0, 1, 1, 0, 0, 0], { clamp: true });
-  const innerTimelineOpacity = useTransform(smoothRotation, [-360, 0, 130, 140, 370, 390], [0, 0, 0, 1, 1, 0], { clamp: true });
+  const innerTimelineOpacity = useTransform(smoothRotation, [-360, 0, 130, 140, 370, 385], [0, 0, 0, 1, 1, 0], { clamp: true });
   const barUiOpacity = innerTimelineOpacity;
 
   // FaceID Crossfade (happens during the FaceID expansion at the top)
-  const faceIdOpacity = useTransform(smoothRotation, [-360, 0, 430, 450], [0, 0, 0, 1], { clamp: true });
+  const faceIdOpacity = useTransform(smoothRotation, [-360, 0, 418, 450], [0, 0, 0, 1], { clamp: true });
 
   // Timeline Progress Fill (Maps the exact checkpoints 160° -> 370°)
   const progressFill = useTransform(smoothRotation, [-360, 0, 160, 230, 300, 370, 450], ["0%", "0%", "0%", "33.33%", "66.66%", "100%", "100%"], { clamp: true });
