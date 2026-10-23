@@ -12,7 +12,8 @@ type Project = {
   category: string;
   description: string;
   metrics: string[];
-  imagePlaceholder: string;
+  imageSrc: string;
+  alt: string;
 };
 
 const PROJECTS: Project[] = [
@@ -23,7 +24,8 @@ const PROJECTS: Project[] = [
     description:
       "AI-powered flying-wing drone network engineered for zero-latency telemetry and disaster prevention.",
     metrics: ["SolidWorks", "ESP32", "OpenCV"],
-    imagePlaceholder: "bg-gradient-to-br from-[#e8e8ed] to-[#d2d2d7]",
+    imageSrc: "/FLUXX.webp",
+    alt: "Fluxx Project",
   },
   {
     id: "02",
@@ -32,7 +34,8 @@ const PROJECTS: Project[] = [
     description:
       "High-performance AI backend for OCR medical report processing and nutritional context management.",
     metrics: ["FastAPI", "Supabase", "Gemini AI"],
-    imagePlaceholder: "bg-gradient-to-br from-[#d2d2d7] to-[#b0b0b5]",
+    imageSrc: "/MEDIPANDA.webp",
+    alt: "MediPanda Project",
   },
   {
     id: "03",
@@ -41,16 +44,18 @@ const PROJECTS: Project[] = [
     description:
       "Hardware-based visual entropy random password generator utilizing custom fluid dynamics.",
     metrics: ["Hardware", "C++", "Sensors"],
-    imagePlaceholder: "bg-gradient-to-br from-[#e0e0e5] to-[#c0c0c5]",
+    imageSrc: "/ENTROPY.webp",
+    alt: "Entropy Project",
   },
   {
     id: "04",
-    title: "Squad House",
+    title: "Hideout",
     category: "Mobile Booking App",
     description:
       "High-conversion iOS/Android booking application with automated spreadsheet synchronization and digital wallet integration.",
     metrics: ["Flutter", "Google Sheets", "Wallet System"],
-    imagePlaceholder: "bg-gradient-to-br from-[#c8c8cf] to-[#b0b0b5]",
+    imageSrc: "/HIDEOUT.webp",
+    alt: "Hideout Project",
   },
 ];
 
@@ -77,8 +82,6 @@ function ProjectCard({
   const cardBlur = useTransform(rotation, [sweetSpot - 70, sweetSpot, sweetSpot + 70], [8, 0, 8], { clamp: true });
   const cardFilter = useTransform(cardBlur, (b) => `blur(${b}px)`);
 
-  // Internal image parallax — shifts the image opposite to scroll direction
-  const imageX = useTransform(rotation, [sweetSpot - 60, sweetSpot + 60], [20, -20], { clamp: true });
 
   return (
     <motion.div
@@ -97,31 +100,16 @@ function ProjectCard({
         <div className="absolute inset-0 border border-white/40 rounded-[32px] pointer-events-none mix-blend-overlay z-50"></div>
         
         {/* ── Image Region ── */}
-        <div className="relative h-[38vh] md:h-[44vh] overflow-hidden">
-          <motion.div
-            className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#f5f5f7] via-[#ebebef] to-[#d1d1d6]"
-            style={{ x: imageX }}
-          >
-            {/* Architectural grid overlay */}
-            <div
-              className="absolute inset-0 opacity-[0.04]"
-              style={{
-                backgroundImage: `
-                  repeating-linear-gradient(to right, #000 0px, #000 1px, transparent 1px, transparent 48px),
-                  repeating-linear-gradient(to bottom, #000 0px, #000 1px, transparent 1px, transparent 48px)
-                `,
-              }}
-            />
-            {/* Centered monogram */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[12vw] md:text-[7vw] font-black text-black/[0.04] tracking-tighter select-none">
-                {project.title}
-              </span>
-            </div>
-          </motion.div>
+        <div className="relative w-full aspect-video overflow-hidden rounded-t-xl bg-neutral-100 dark:bg-neutral-800">
+          <img 
+            src={project.imageSrc} 
+            alt={project.alt}
+            className="w-full h-full object-cover object-center scale-[1.15]" 
+            loading="lazy"
+          />
 
           {/* Top-left floating index badge */}
-          <div className="absolute top-6 left-6 bg-white/80 backdrop-blur-xl rounded-2xl px-4 py-2 border border-black/[0.04] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <div className="absolute top-6 left-6 bg-white/80 backdrop-blur-xl rounded-2xl px-4 py-2 border border-black/[0.04] shadow-[0_2px_8px_rgba(0,0,0,0.04)] z-10">
             <span className="font-mono text-xs font-semibold text-[#1D1D1F] tracking-widest">
               {project.id}
             </span>
@@ -194,6 +182,9 @@ export default function PremiumShowcase({ rotation }: PremiumShowcaseProps) {
               rotation={rotation}
             />
           ))}
+
+          {/* INJECT THIS EXACT SPACER TO FIX THE SOFTLOCK */}
+          <div className="w-[50vw] shrink-0 pointer-events-none" aria-hidden="true" />
         </motion.div>
       </div>
     </div>

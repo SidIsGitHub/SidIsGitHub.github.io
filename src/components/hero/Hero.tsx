@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useScroll, useTransform, useMotionValueEvent, useVelocity, useSpring, useMotionTemplate, motion, useMotionValue, MotionValue, animate } from "framer-motion";
 import CodeUnderworld from "./CodeUnderworld";
@@ -45,6 +45,17 @@ export default function Hero({ rawCode }: HeroProps) {
   const animatedFaceRef = useRef<HTMLImageElement>(null);
   const staticFaceRef = useRef<HTMLDivElement>(null);
   const hasPlayedRef = useRef(false);
+  const corruptionRef = useRef<HTMLDivElement>(null);
+  
+  // 1. The local reference for the About Me container
+  const aboutMeRef = useRef<HTMLDivElement>(null);
+  
+  // 2. Localized scroll tracking (0.0 = top enters viewport, 1.0 = bottom hits bottom of viewport)
+  const { scrollYProgress: aboutMeProgress } = useScroll({
+    target: aboutMeRef,
+    offset: ["start bottom", "end end"] as any
+  });
+
   const { scrollYProgress, scrollY } = useScroll({
     target: containerNode ? containerRef : undefined,
     offset: ["start start", "end start"] // Now tracks the 100vh unpin phase
@@ -202,7 +213,7 @@ export default function Hero({ rawCode }: HeroProps) {
 
   // 1. Text Physics (Starts higher at 35vh, moves to top-left)
   const initTop = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["35vh", "35vh", "35vh", "5vh", "5vh", "5vh"], { clamp: true });
-  const initLeft = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["50vw", "50vw", "50vw", "4vw", "4vw", "4vw"], { clamp: true });
+  const initLeft = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["50vw", "50vw", "50vw", "1vw", "1vw", "1vw"], { clamp: true });
   const initX = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["-50%", "-50%", "-50%", "0%", "0%", "0%"], { clamp: true });
   const initY = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], ["-50%", "-50%", "-50%", "0%", "0%", "0%"], { clamp: true });
   const initScale = useTransform(smoothRotation, [-360, 0, 110, 140, 360, 450], [1, 1, 1, 0.25, 0.25, 0.25], { clamp: true });
@@ -287,15 +298,61 @@ export default function Hero({ rawCode }: HeroProps) {
   // Tick fades in quickly during squircle expansion (0.85-0.90 / 402-418), holds at 100% until 0.98 / 444, then fades out.
   const tickOpacityFromScroll = useTransform(scrollYProgress, [0.85, 0.90, 0.98, 1.0], [0, 1, 1, 0]);
   const tickOpacityFromRot = useTransform(smoothRotation, [-360, 0, 402, 418, 444, 450], [0, 0, 0, 1, 1, 0], { clamp: true });
-  const tickOpacity = useTransform([tickOpacityFromScroll, tickOpacityFromRot], ([s, r]) => Math.max(s, r));
+  const tickOpacity = useTransform([tickOpacityFromScroll, tickOpacityFromRot], ([s, r]) => Math.max(s as number, r as number));
 
   // Static Face fades in strictly during the final 2% (0.98-1.0 / 444-450)
   const staticFaceOpacityFromScroll = useTransform(scrollYProgress, [0.98, 1.0], [0, 1]);
   const staticFaceOpacityFromRot = useTransform(smoothRotation, [-360, 0, 444, 450], [0, 0, 0, 1], { clamp: true });
-  const staticFaceOpacity = useTransform([staticFaceOpacityFromScroll, staticFaceOpacityFromRot], ([s, r]) => Math.max(s, r));
+  const staticFaceOpacity = useTransform([staticFaceOpacityFromScroll, staticFaceOpacityFromRot], ([s, r]) => Math.max(s as number, r as number));
 
-  // Maps the descent into the underworld: starts clean at 0.85, peaks at 1.0
-  const meltdownIntensity = useTransform(scrollYProgress, [0.85, 1.0], [0, 1]);
+// Deterministic pseudo-random generator with fixed seed to eliminate SSR/hydration mismatches
+function createPRNG(seed = 1337) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+  // Generates 1500 tiny, sharp Minecraft pixels that spread organically
+  const corruptionPixels = useMemo(() => {
+    const rand = createPRNG(42);
+    const pixels: Array<{
+      id: number;
+      x: number;
+      y: number;
+      size: number;
+      threshold: number;
+      code: string;
+      isFinal?: boolean;
+    }> = [];
+    const seeds = [{ x: 50, y: 50 }, { x: 20, y: 80 }, { x: 80, y: 20 }]; // 3 origin points
+    
+    for (let i = 0; i < 1500; i++) {
+      const parent = i < 3 ? seeds[i] : pixels[Math.floor(rand() * i)];
+      const x = parent.x + (rand() - 0.5) * 5; 
+      const y = parent.y + (rand() - 0.5) * 5;
+      
+      pixels.push({
+        id: i,
+        x: Number(Math.max(0, Math.min(100, x)).toFixed(4)),
+        y: Number(Math.max(0, Math.min(100, y)).toFixed(4)),
+        size: Number((rand() * 1.5 + 0.5).toFixed(4)),
+        threshold: Number(((i / 1500) * 0.98).toFixed(4)),
+        code: `0x${Math.floor(rand() * 16777215).toString(16).toUpperCase().padStart(6, "0")}`
+      });
+    }
+
+    pixels.push({ 
+      id: 9999, x: 0, y: 0, size: 100, threshold: 0.99, isFinal: true,
+      code: "SYS_FAILURE_COMPLETE // NULL_PTR // OVERRIDE // " 
+    });
+
+    return pixels;
+  }, []);
+
+
 
   // Timeline Progress Fill (Maps the exact checkpoints 160° -> 370°)
   const progressFill = useTransform(smoothRotation, [-360, 0, 160, 230, 300, 370, 450], ["0%", "0%", "0%", "33.33%", "66.66%", "100%", "100%"], { clamp: true });
@@ -324,6 +381,9 @@ export default function Hero({ rawCode }: HeroProps) {
   });
 
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    // 1. DIAGNOSTIC LOGGER:
+    console.log(`[SCROLL TELEMETRY] Current: ${latest.toFixed(4)}`);
+
     if (animatedFaceRef.current) {
       if (latest >= 0.85 && !hasPlayedRef.current) {
         hasPlayedRef.current = true;
@@ -332,25 +392,28 @@ export default function Hero({ rawCode }: HeroProps) {
         hasPlayedRef.current = false;
       }
     }
-
-    // Progressively inject the meltdown intensity into the global DOM
-    const intensity = meltdownIntensity.get();
-    document.body.style.setProperty('--meltdown', intensity.toString());
-    
-    // Toggle the SVG displacement filter on/off to save GPU when not glitching
-    if (latest >= 0.85) {
-      document.body.classList.add("active-meltdown");
-    } else {
-      document.body.classList.remove("active-meltdown");
-    }
   });
 
-  useEffect(() => {
-    return () => {
-      document.body.classList.remove("active-meltdown");
-      document.body.style.removeProperty("--meltdown");
-    };
-  }, []);
+  // THIS MUST NOW TRACK aboutMeProgress, NOT scrollYProgress
+  useMotionValueEvent(aboutMeProgress, "change", (latest) => {
+    // DIAGNOSTIC LOGGER FOR THE ISOLATED SECTION:
+    console.log(`[ABOUT ME TELEMETRY] Local Progress: ${latest.toFixed(4)}`);
+
+    if (corruptionRef.current) {
+      // 0.60 now guarantees the About Me section is physically 60% visible on screen
+      if (latest >= 0.60) {
+        // Map the remaining 40% of the section's scroll directly to 100% intensity
+        const intensity = (latest - 0.60) * 2.5; 
+        const clampedIntensity = Math.min(1, Math.max(0, intensity));
+        
+        corruptionRef.current.style.opacity = "1";
+        corruptionRef.current.style.setProperty('--meltdown', clampedIntensity.toString());
+      } else {
+        corruptionRef.current.style.opacity = "0";
+        corruptionRef.current.style.setProperty('--meltdown', "0");
+      }
+    }
+  });
 
   const handleBootComplete = useCallback(() => {
     setHasBooted(true);
@@ -362,29 +425,18 @@ export default function Hero({ rawCode }: HeroProps) {
 
   return (
     <>
-      {/* LAYER 1: THE RED CODE UNDERWORLD */}
-      <div 
-        className="fixed inset-0 pointer-events-none flex flex-wrap content-start overflow-hidden text-[#ff003c] font-mono text-[12px] leading-none z-[-50]"
-        style={{ opacity: "calc(var(--meltdown) * 0.8)" }}
+      {/* LAYER 2: FOREGROUND CONTENT (The user's actual site) */}
+      <motion.div
+        ref={(node) => {
+          containerRef.current = node;
+          if (node && containerNode !== node) {
+            setContainerNode(node);
+          }
+        }}
+        id="foreground-content"
+        className="relative w-full h-dvh overflow-x-hidden max-w-[100vw] overflow-y-hidden bg-black touch-pan-y"
+        style={{ cursor: globalCursor }}
       >
-        {Array.from({ length: 250 }).map((_, i) => (
-          <span key={i} className="mr-2 mb-1">
-            SYS_ERR_0x{Math.floor(Math.random() * 9999999).toString(16).toUpperCase()}
-          </span>
-        ))}
-      </div>
-
-    <motion.main
-      ref={(node) => {
-        containerRef.current = node;
-        if (node && containerNode !== node) {
-          setContainerNode(node);
-        }
-      }}
-      id="foreground-content"
-      className="relative w-full h-dvh overflow-x-hidden max-w-[100vw] overflow-y-hidden bg-black touch-pan-y"
-      style={{ cursor: globalCursor }}
-    >
       {/* Sticky container — keeps the visual viewport locked while scrolling drives physics */}
       <div className="sticky top-0 w-full h-screen overflow-hidden">
 
@@ -502,37 +554,43 @@ export default function Hero({ rawCode }: HeroProps) {
         className="fixed inset-0 z-[999] pointer-events-none bg-white mix-blend-screen backdrop-brightness-200"
         style={{ opacity: flashbangOpacity }}
       />
-      {/* LAYER 2: HORIZONTAL GLITCH ENGINE */}
-      <svg className="fixed pointer-events-none w-0 h-0 z-[-1]">
-        <filter id="demonic-tear" x="-20%" y="-20%" width="140%" height="140%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.005 0.5" numOctaves="3" result="noise">
-            <animate attributeName="baseFrequency" values="0.005 0.5; 0.01 0.6; 0.005 0.5" dur="0.2s" repeatCount="indefinite" />
-          </feTurbulence>
-          <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 25 -10" in="noise" result="coloredNoise" />
-          <feDisplacementMap in="SourceGraphic" in2="coloredNoise" scale="40" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-      </svg>
-      
-      <style>{`
-        :root {
-          --meltdown: 0;
-        }
-        
-        body.active-meltdown #foreground-content,
-        body.active-meltdown .fixed.z-\\[9999\\] /* Also targets the React Portal Dynamic Island */ {
-          filter: 
-            url(#demonic-tear) 
-            invert(calc(var(--meltdown) * 1)) 
-            contrast(calc(1 + (var(--meltdown) * 2)));
-          opacity: calc(1 - (var(--meltdown) * 0.15));
-          pointer-events: none;
-        }
-      `}</style>
-    </motion.main>  
+
+      {/* 1. ATTACH THE REF TO THE ABOUT ME WRAPPER */}
+      <section ref={aboutMeRef as any} className="relative w-full min-h-screen overflow-hidden flex flex-col items-center justify-center">
+        {/* ... [EXISTING ABOUT ME CONTENT] ... */}
+
+        {/* 2. THE LOCALIZED CORRUPTION ENGINE */}
+        <div 
+          ref={corruptionRef}
+          suppressHydrationWarning
+          className="absolute inset-0 pointer-events-none z-[50] overflow-hidden transition-opacity duration-75"
+          style={{ opacity: 0 }}
+        >
+          {corruptionPixels.map((p) => (
+            <div
+              key={p.id}
+              className="absolute bg-black text-[#ff003c] font-mono leading-none flex items-start justify-start overflow-hidden break-all"
+              style={{
+                left: `${p.x}%`, 
+                top: `${p.y}%`, 
+                width: p.isFinal ? '100%' : `${p.size}vw`, 
+                height: p.isFinal ? '100%' : `${p.size}vw`, 
+                fontSize: p.isFinal ? "16px" : "10px",
+                opacity: `clamp(0, calc((var(--meltdown) - ${p.threshold}) * 9999), 1)`
+              }}
+            >
+              {/* INCREASED REPETITION TO PREVENT EMPTY BLACK VOIDS ON 4K MONITORS */}
+              {p.code.repeat(p.isFinal ? 2000 : 15)} 
+            </div>
+          ))}
+        </div>
+      </section>
+    </motion.div>
 
     {/* PORTAL TO ESCAPE SMOOTH SCROLL TRANSFORM */}
     {isMounted && typeof document !== "undefined" && createPortal(
       <motion.div 
+        id="portal-content"
         className="fixed bottom-0 left-1/2 z-[9999] overflow-hidden flex items-center justify-center touch-none shadow-2xl" 
         transition={{ type: "spring", mass: 2.5, damping: 35, stiffness: 80 }}
         style={{ 
